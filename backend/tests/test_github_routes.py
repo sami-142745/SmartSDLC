@@ -1,6 +1,7 @@
 import pytest
 
 from app.services.github_client import GitHubAPIError
+from app.services.github_oauth import OAuthError
 from app.services.jwt_service import create_access_token
 
 REPO = {
@@ -143,3 +144,73 @@ def test_endpoints_still_require_auth(client):
     assert client.get("/repositories").status_code == 401
     assert client.get("/pullrequests?owner=a&repo=b").status_code == 401
     assert client.get("/pullrequests/a/b/1").status_code == 401
+
+
+def test_github_connect_success(client, auth_headers, monkeypatch):
+    profile = {"id": 7, "login": "octocat", "name": "Octo Cat", "email": None, "avatar_url": None}
+    saved = {}
+
+    async def fake_fetch(access_token):
+        return profile
+
+    async def fake_upsert(profile_, token_):
+        saved["profile"] = profile_
+        saved["token"] = token_
+
+    monkeypatch.setattr("app.routers.github.github_oauth.fetch_user_profile", fake_fetch)
+    monkeypatch.setattr("app.routers.github.upsert_github_user", fake_upsert)
+
+    resp = client.post(
+        "/github/connect",
+        json={"token": "gho_connect_secret_123"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"connected": True, "login": "octocat"}
+    assert "gho_connect_secret_123" not in resp.text
+    assert saved["profile"]["id"] == 7
+    assert saved["token"] == "gho_connect_secret_123"
+
+
+def test_github_connect_invalid_token(client, auth_headers, monkeypatch):
+    async def failing(access_token):
+        raise OAuthError("GitHub could not authenticate the user")
+
+    monkeypatch.setattr("app.routers.github.github_oauth.fetch_user_profile", failing)
+
+    resp = client.post(
+        "/github/connect",
+        json={"token": "gho_invalid_token"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "GitHub could not authenticate the user"
+    assert "gho_invalid_token" not in resp.text
+
+
+def test_github_connect_identity_mismatch(client, auth_headers, monkeypatch):
+    async def other_account(access_token):
+        return {"id": 99, "login": "someone-else"}
+
+    monkeypatch.setattr("app.routers.github.github_oauth.fetch_user_profile", other_account)
+
+    resp = client.post(
+        "/github/connect",
+        json={"token": "gho_other_token"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 400
+    assert "gho_other_token" not in resp.text
+
+
+def test_github_connect_missing_token_rejected(client, auth_headers):
+    resp = client.post("/github/connect", json={}, headers=auth_headers)
+    assert resp.status_code == 422
+
+    resp = client.post("/github/connect", json={"token": ""}, headers=auth_headers)
+    assert resp.status_code == 422
+
+
+def test_github_connect_requires_authentication(client):
+    resp = client.post("/github/connect", json={"token": "gho_secret"})
+    assert resp.status_code == 401

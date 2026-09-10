@@ -1,9 +1,13 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.services.github_client import GitHubAPIError, GitHubClient
-from app.services.security import require_github_token
+from app.services.github_oauth import OAuthError, github_oauth
+from app.services.security import get_current_user, require_github_token
+from app.services.user_repository import upsert_github_user
 
 router = APIRouter()
 
@@ -67,9 +71,33 @@ def _error_from_github(e: GitHubAPIError) -> HTTPException:
     return HTTPException(status_code=status_code, detail=e.message)
 
 
-@router.post("/github/connect")
-async def github_connect(token: str = Depends(require_github_token)):
-    raise HTTPException(501, "Not implemented yet")
+class GitHubConnectRequest(BaseModel):
+    token: str = Field(..., min_length=1)
+
+
+class GitHubConnectResponse(BaseModel):
+    connected: bool
+    login: str
+
+
+@router.post("/github/connect", response_model=GitHubConnectResponse)
+async def github_connect(
+    payload: GitHubConnectRequest,
+    user: dict[str, Any] = Depends(get_current_user),
+):
+    try:
+        profile = await github_oauth.fetch_user_profile(payload.token)
+    except OAuthError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+    if int(profile.get("id")) != int(user["github_id"]):
+        raise HTTPException(
+            status_code=400,
+            detail="GitHub token belongs to a different account",
+        )
+
+    await upsert_github_user(profile, payload.token)
+    return {"connected": True, "login": profile.get("login")}
 
 
 @router.get("/repositories", response_model=RepositoryListResponse)

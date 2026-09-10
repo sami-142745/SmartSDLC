@@ -41,3 +41,8 @@ def test_callback_error_returns_401(client, monkeypatch):
     resp = client.get("/auth/github/callback?code=abc&state=nope")
     assert resp.status_code == 401
     assert "Invalid or expired OAuth state" in resp.json()["detail"]
+
+
+def test_login_endpoint_removed(client):
+    resp = client.post("/auth/login", json={"username": "octocat", "password": "pw"})
+    assert resp.status_code == 404

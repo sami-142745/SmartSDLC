@@ -34,8 +34,3 @@ async def github_callback(code: str, state: str | None = None):
 
     jwt = create_access_token({"sub": str(user["github_id"]), "login": user["login"]})
     return {"access_token": jwt, "user": user}
-
-
-@router.post("/login")
-def login(payload: dict):
-    raise HTTPException(501, "Use /auth/github/callback")
