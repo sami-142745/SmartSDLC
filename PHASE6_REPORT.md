@@ -64,7 +64,7 @@ Typed clients for auth, GitHub (repos/PRs/diff), reviews/findings/feedback, and 
 
 ## 11. Tests passed/failed
 
-- Backend: `pytest` — **184 passed, 0 failed** (unchanged regression count); `python -m compileall backend/app backend/tests` OK.
+- Backend: `pytest` — **196 passed, 0 failed** (includes 6 heuristic and GitHub token connection tests added post Phase 6); `python -m compileall backend/app backend/tests` OK.
 - Frontend: **38 passed / 38 (14 files), 0 failed**; `npx tsc --noEmit` clean.
 
 ## 12. npm build result
@@ -78,7 +78,7 @@ Typed clients for auth, GitHub (repos/PRs/diff), reviews/findings/feedback, and 
 - `docker compose up -d --build frontend` — frontend + backend recreated (no containers or volumes removed).
 - `docker compose ps` — mongo (3h), backend, frontend all Up; legacy `smartsdlc-mongodb` still Up and untouched.
 - `curl.exe http://localhost:5173` → HTTP 200 (title “SmartSDLC”); `curl.exe http://localhost:8000/health` → `{"status":"ok","database":"connected","version":"0.1.0"}`.
-- OpenAPI: all 19 Phase 1–5 paths still registered → `GET /openapi.json`.
+- OpenAPI: the 19 Phase 1–5 paths were registered in Phase 6; after removing the deprecated `POST /auth/login` stub the live route count is **18** → `GET /openapi.json`.
 
 ## 14. Remaining limitations
 
@@ -91,4 +91,4 @@ Typed clients for auth, GitHub (repos/PRs/diff), reviews/findings/feedback, and 
 
 ---
 
-Phase 6 is complete. **Phase 7 not started. Nothing was committed or pushed.**
+Phase 6 is complete. Follow-up backend work (heuristic security-quality improvements, live Tnsif PR #2 validation, and the GitHub token connection flow) has been committed and pushed on `master`.

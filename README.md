@@ -80,7 +80,7 @@ The API base URL is taken from `VITE_API_BASE_URL` (`frontend/.env` or root `.en
 Backend (from `backend/`, uses `.venv`):
 
 ```bash
-python -m pytest tests -q   # 190 tests
+python -m pytest tests -q   # 196 tests
 ```
 
 Frontend (from `frontend/`):
