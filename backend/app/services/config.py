@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     REVIEW_MAX_FILE_CHARS: int = 20000
     REVIEW_MAX_DIFF_CHARS: int = 150000
 
+    DOC_MAX_FILES: int = 16
+    DOC_MAX_FILE_CHARS: int = 6000
+    DOC_MAX_CODE_CHARS: int = 50000
+
     CORS_ORIGINS: str = "http://localhost:5173"
 
     GITHUB_WEBHOOK_SECRET: str = "change_me"

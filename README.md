@@ -80,7 +80,7 @@ The API base URL is taken from `VITE_API_BASE_URL` (`frontend/.env` or root `.en
 Backend (from `backend/`, uses `.venv`):
 
 ```bash
-python -m pytest tests -q   # 196 tests
+python -m pytest tests -q   # 338 tests
 ```
 
 Frontend (from `frontend/`):
@@ -95,3 +95,13 @@ npm run build                # tsc --noEmit + vite build
 - Heuristic + Gemini findings are each stored with severity, category, source, line, code, recommendation, and confidence. Findings carry a stable ID so accept/dismiss feedback upserts and survives re-runs.
 - When Gemini is unavailable (no API key or error) a review completes in `gemini_unavailable` status with heuristic counts only.
 - Feedback aggregates are reported per severity and category in `GET /dashboard/feedback-summary`.
+
+## Known limitations
+
+- **GitLab PAT provisioning:** GitLab repository/Merge Request integration currently requires a GitLab Personal Access Token to be available to the backend/provider configuration. There is no separate GitLab PAT entry/OAuth UX yet; the current demo uses the configured provider credential rather than supporting multiple independent SCM accounts.
+
+- **GitLab webhook ingestion:** Automatic webhook-triggered review is currently implemented for GitHub. GitLab Merge Requests can be accessed through the provider integration, but GitLab webhook ingestion for automatic MR review is not yet enabled.
+
+- **WebGL bundle:** The cinematic 3D scene produces a relatively large lazy-loaded WebGL chunk. This is intentional for the immersive visualization layer.
+
+- **Testing warnings:** Some test environments may emit non-fatal resource warnings from database handles; these do not currently cause test failures.

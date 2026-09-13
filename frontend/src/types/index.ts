@@ -1,4 +1,5 @@
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+export type ScmProvider = 'github' | 'gitlab';
 export type Category =
   | 'security'
   | 'bug'
@@ -33,6 +34,8 @@ export interface Finding {
   recommendation: string | null;
   confidence: number;
   source: FindingSource;
+  heuristic_severity?: string | null;
+  heuristic_confidence?: number | null;
 }
 
 export interface ReviewResponse {
@@ -218,4 +221,226 @@ export interface FeedbackSummary {
   acceptance_rate: number;
   category_feedback: Record<string, FeedbackActionStats>;
   severity_feedback: Record<string, FeedbackActionStats>;
+}
+
+export interface LearningProfile {
+  owner: string;
+  repository: string;
+  category: string;
+  accepted_count: number;
+  dismissed_count: number;
+  total_count: number;
+  acceptance_rate: number;
+  learned_weight: number;
+  confidence: number;
+  updated_at: string | null;
+}
+
+export interface FeedbackLearningResponse {
+  profiles: LearningProfile[];
+  repositories: string[];
+  categories: string[];
+  total_feedback: number;
+  data_available: boolean;
+}
+
+export interface WorkflowHistoryEntry {
+  stage: string;
+  at: string | null;
+  detail: string | null;
+}
+
+export interface Workflow {
+  workflow_id: string;
+  owner: string;
+  repository: string;
+  pull_request_number: number;
+  trigger: string;
+  provider: string;
+  status: string;
+  stage: string;
+  error: string | null;
+  review_id: string | null;
+  duration_ms: number | null;
+  history: WorkflowHistoryEntry[];
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface WorkflowListResponse {
+  items: Workflow[];
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+}
+
+export interface WebhookEvent {
+  id: string;
+  event: string;
+  action: string;
+  repository: string | null;
+  pull_number: number | null;
+  sender: string | null;
+  delivery_id: string | null;
+  payload_hash_prefix: string | null;
+  received_at: string | null;
+}
+
+export interface WebhookEventListResponse {
+  items: WebhookEvent[];
+  total: number;
+}
+
+export interface DocumentationSource {
+  repository: string;
+  owner: string;
+  pull_request: string | null;
+  commit: string | null;
+  branch: string | null;
+}
+
+export interface GeneratedDocumentation {
+  id: string;
+  title: string;
+  summary: string;
+  architecture: string;
+  modules: string[];
+  api: string[];
+  changes: string[];
+  configuration: string[];
+  security: string[];
+  setup: string[];
+  source: DocumentationSource;
+  model: string;
+  status: string;
+  error: string | null;
+  duration_ms: number | null;
+  generated_at: string | null;
+}
+
+export interface DocumentationListResponse {
+  items: GeneratedDocumentation[];
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+}
+
+export interface GenerateDocumentationRequest {
+  owner: string;
+  repository: string;
+  pull_request?: number;
+}
+
+export type InsightReportType = 'repository' | 'pull_request';
+export type TrendStatus = 'increasing' | 'decreasing' | 'stable' | 'insufficient';
+
+export interface TrendPoint {
+  period: string;
+  reviews: number;
+  findings: number;
+}
+
+export interface InsightTrend {
+  metric: string;
+  status: TrendStatus;
+  earlier: number;
+  later: number;
+  note: string | null;
+}
+
+export interface InsightRisk {
+  key: string;
+  label: string;
+  severity: Severity;
+  triggered: boolean;
+  detail: string;
+}
+
+export interface InsightRecommendation {
+  priority: 'high' | 'medium' | 'low';
+  message: string;
+  basis: string;
+}
+
+export interface InsightNarrative {
+  executive_summary: string | null;
+  trend_interpretation: string | null;
+  risk_explanation: string | null;
+  recommendations: string[];
+  model: string | null;
+}
+
+export interface InsightMetrics {
+  severity_distribution: Record<string, number>;
+  category_distribution: Record<string, number>;
+  finding_source_distribution: Record<string, number>;
+  total_findings: number;
+  critical_findings: number;
+  high_findings: number;
+  medium_findings: number;
+  low_findings: number;
+  info_findings: number;
+  security_findings: number;
+  complexity_findings: number;
+  average_findings_per_review: number;
+  finding_frequency: number;
+  recurring_categories: string[];
+}
+
+export interface InsightActivity {
+  review_count: number;
+  pull_request_count: number;
+  reviews_this_week: number;
+  first_review_at: string | null;
+  latest_review_at: string | null;
+  average_findings_per_review: number;
+  findings_per_active_day: number;
+  reviews_over_time: TrendPoint[];
+}
+
+export interface InsightFeedback {
+  total_accepted: number;
+  total_dismissed: number;
+  total_feedback: number;
+  acceptance_rate: number;
+  category_feedback: Record<string, FeedbackActionStats>;
+  severity_feedback: Record<string, FeedbackActionStats>;
+}
+
+export interface InsightReport {
+  id: string;
+  report_type: InsightReportType;
+  owner: string;
+  repository: string;
+  pull_request: number | null;
+  source_review_ids: string[];
+  metrics: InsightMetrics;
+  activity: InsightActivity;
+  feedback: InsightFeedback;
+  trends: InsightTrend[];
+  risks: InsightRisk[];
+  recommendations: InsightRecommendation[];
+  narrative: InsightNarrative | null;
+  model: string | null;
+  status: string;
+  error: string | null;
+  duration_ms: number;
+  generated_at: string | null;
+}
+
+export interface InsightListResponse {
+  items: InsightReport[];
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+}
+
+export interface GenerateInsightRequest {
+  owner: string;
+  repository: string;
+  pull_request?: number;
+  generate_narrative?: boolean;
 }

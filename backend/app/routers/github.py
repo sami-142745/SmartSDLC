@@ -6,19 +6,18 @@ from pydantic import BaseModel, Field
 
 from app.services.github_client import GitHubAPIError, GitHubClient
 from app.services.github_oauth import OAuthError, github_oauth
+from app.services.gitlab_client import GitLabClient
+from app.services.scm import ScmProvider, scm_error_response
 from app.services.security import get_current_user, require_github_token
 from app.services.user_repository import upsert_github_user
 
 router = APIRouter()
 
-_ERROR_STATUS_BY_CATEGORY = {
-    "authentication": 401,
-    "not_found": 404,
-    "rate_limit": 429,
-    "server": 502,
-    "network": 503,
-    "unknown": 502,
-}
+
+def _client_for(provider: ScmProvider, token: str) -> GitHubClient | GitLabClient:
+    if provider is ScmProvider.gitlab:
+        return GitLabClient(token)
+    return GitHubClient(token)
 
 
 class Repository(BaseModel):
@@ -66,11 +65,6 @@ class PullRequestFile(BaseModel):
     patch: str | None = None
 
 
-def _error_from_github(e: GitHubAPIError) -> HTTPException:
-    status_code = _ERROR_STATUS_BY_CATEGORY.get(e.category, 502)
-    return HTTPException(status_code=status_code, detail=e.message)
-
-
 class GitHubConnectRequest(BaseModel):
     token: str = Field(..., min_length=1)
 
@@ -104,12 +98,13 @@ async def github_connect(
 async def list_repositories(
     page: int = Query(1, ge=1),
     per_page: int = Query(30, ge=1, le=100),
+    provider: ScmProvider = Query(ScmProvider.github),
     token: str = Depends(require_github_token),
 ):
     try:
-        result = await GitHubClient(token).list_repositories(page=page, per_page=per_page)
+        result = await _client_for(provider, token).list_repositories(page=page, per_page=per_page)
     except GitHubAPIError as e:
-        raise _error_from_github(e)
+        raise scm_error_response(provider, e)
     return result
 
 
@@ -120,10 +115,11 @@ async def list_pullrequests(
     state: str = Query("open", pattern="^(open|closed|all)$"),
     page: int = Query(1, ge=1),
     per_page: int = Query(30, ge=1, le=100),
+    provider: ScmProvider = Query(ScmProvider.github),
     token: str = Depends(require_github_token),
 ):
     try:
-        result = await GitHubClient(token).list_pull_requests(
+        result = await _client_for(provider, token).list_pull_requests(
             owner=owner,
             repo=repo,
             state=state,
@@ -131,7 +127,7 @@ async def list_pullrequests(
             per_page=per_page,
         )
     except GitHubAPIError as e:
-        raise _error_from_github(e)
+        raise scm_error_response(provider, e)
     return result
 
 
@@ -140,12 +136,13 @@ async def get_pull_request(
     owner: str,
     repo: str,
     number: int,
+    provider: ScmProvider = Query(ScmProvider.github),
     token: str = Depends(require_github_token),
 ):
     try:
-        result = await GitHubClient(token).get_pull_request(owner, repo, number)
+        result = await _client_for(provider, token).get_pull_request(owner, repo, number)
     except GitHubAPIError as e:
-        raise _error_from_github(e)
+        raise scm_error_response(provider, e)
     return result
 
 
@@ -154,12 +151,13 @@ async def get_pull_request_files(
     owner: str,
     repo: str,
     number: int,
+    provider: ScmProvider = Query(ScmProvider.github),
     token: str = Depends(require_github_token),
 ):
     try:
-        result = await GitHubClient(token).get_pull_request_files(owner, repo, number)
+        result = await _client_for(provider, token).get_pull_request_files(owner, repo, number)
     except GitHubAPIError as e:
-        raise _error_from_github(e)
+        raise scm_error_response(provider, e)
     return result
 
 
@@ -168,10 +166,11 @@ async def get_pull_request_diff(
     owner: str,
     repo: str,
     number: int,
+    provider: ScmProvider = Query(ScmProvider.github),
     token: str = Depends(require_github_token),
 ):
     try:
-        diff = await GitHubClient(token).get_pull_request_diff(owner, repo, number)
+        diff = await _client_for(provider, token).get_pull_request_diff(owner, repo, number)
     except GitHubAPIError as e:
-        raise _error_from_github(e)
+        raise scm_error_response(provider, e)
     return PlainTextResponse(diff, media_type="text/plain")

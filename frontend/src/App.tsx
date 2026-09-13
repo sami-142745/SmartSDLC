@@ -1,11 +1,16 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { MotionConfig } from 'framer-motion';
 
 import { AuthProvider } from './auth/AuthContext';
+import { SmoothScroll } from './components/SmoothScroll';
+import { CursorSpotlight } from './components/ui/CursorSpotlight';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { Layout } from './components/Layout/Layout';
 import { DashboardPage } from './pages/DashboardPage';
+import { DocumentsPage } from './pages/DocumentsPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { InsightsPage } from './pages/InsightsPage';
 import { LoginCallbackPage } from './pages/LoginCallbackPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -15,12 +20,17 @@ import { RepoPage } from './pages/RepoPage';
 import { RepositoriesPage } from './pages/RepositoriesPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { WorkflowDetailPage } from './pages/WorkflowDetailPage';
+import { WorkflowsPage } from './pages/WorkflowsPage';
 
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
+        <MotionConfig reducedMotion="user">
+          <CursorSpotlight />
+          <SmoothScroll />
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/login/callback" element={<LoginCallbackPage />} />
 
@@ -37,13 +47,18 @@ export default function App() {
               />
               <Route path="/reviews/:owner/:repo/:number" element={<ReviewPage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/documents" element={<DocumentsPage />} />
+              <Route path="/insights" element={<InsightsPage />} />
               <Route path="/feedback" element={<FeedbackPage />} />
+              <Route path="/workflows" element={<WorkflowsPage />} />
+              <Route path="/workflows/:workflowId" element={<WorkflowDetailPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+          </Routes>
+        </MotionConfig>
       </BrowserRouter>
     </AuthProvider>
   );

@@ -58,6 +58,16 @@ describe('ReviewPage', () => {
     expect(screen.getAllByText('Info').length).toBeGreaterThan(0);
   });
 
+  it('shows the automated scans summary for heuristic findings', async () => {
+    reviewsMocks.getReviews.mockResolvedValue([makeReview()]);
+    reviewsMocks.getReviewFindings.mockResolvedValue({ review_id: 'review-1', findings });
+
+    renderReview();
+
+    expect(await screen.findByText('Automated scans')).toBeInTheDocument();
+    expect(screen.getByText('1 rule match')).toBeInTheDocument();
+  });
+
   it('shows an empty state when no review exists yet', async () => {
     reviewsMocks.getReviews.mockResolvedValue([]);
 
@@ -80,7 +90,7 @@ describe('ReviewPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /run ai review/i }));
 
     expect(await screen.findByText(/Review #101/i)).toBeInTheDocument();
-    expect(reviewsMocks.runReview).toHaveBeenCalledWith('acme', 'webapp', 101);
+    expect(reviewsMocks.runReview).toHaveBeenCalledWith('acme', 'webapp', 101, 'github');
   });
 
   it('lets the user accept a finding and stores the feedback', async () => {

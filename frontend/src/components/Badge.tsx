@@ -7,24 +7,23 @@ interface BadgeProps {
 
 export function Badge({ children, className = '' }: BadgeProps) {
   return (
-    <span
-      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${className}`}
-    >
+    <span className={`chip relative inline-flex items-center gap-1.5 ${className}`}>
       {children}
     </span>
   );
 }
 
+const STATE_CLASSES: Record<string, string> = {
+  open: 'border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-300',
+  closed: 'border-slate-500/30 bg-slate-500/[0.06] text-slate-400',
+  merged: 'border-violet-400/25 bg-violet-400/[0.06] text-violet-300',
+  complete: 'border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-300',
+  gemini_unavailable: 'border-amber-400/25 bg-amber-400/[0.06] text-amber-300',
+  failed: 'border-rose-500/25 bg-rose-500/[0.06] text-rose-300',
+  running: 'border-sky-400/25 bg-sky-400/[0.06] text-sky-300',
+};
+
 export function StateBadge({ state }: { state: string }) {
-  const map: Record<string, string> = {
-    open: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-    closed: 'bg-red-100 text-red-800 border-red-300',
-    merged: 'bg-violet-100 text-violet-800 border-violet-300',
-    complete: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-    gemini_unavailable: 'bg-amber-100 text-amber-800 border-amber-300',
-    failed: 'bg-red-100 text-red-800 border-red-300',
-    running: 'bg-sky-100 text-sky-800 border-sky-300',
-  };
-  const cls = map[state] ?? 'bg-slate-100 text-slate-700 border-slate-300';
+  const cls = STATE_CLASSES[state] ?? 'border-slate-500/30 bg-slate-500/[0.06] text-slate-400';
   return <Badge className={cls}>{state.replace('_', ' ')}</Badge>;
 }

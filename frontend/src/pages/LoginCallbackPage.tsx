@@ -3,8 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { exchangeCode } from '../api/auth';
 import { useAuth } from '../auth/AuthContext';
+import { AppBackground } from '../components/Background';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
+import { LoginVisual } from '../components/LoginVisual';
 
 export function LoginCallbackPage() {
   const { setSession } = useAuth();
@@ -37,28 +39,30 @@ export function LoginCallbackPage() {
       });
   }, [location, setSession, navigate]);
 
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-900 px-4">
-        <div className="w-full max-w-md">
-          <ErrorState title="Sign-in failed" message={error}>
-            <div className="mt-4">
-              <Link
-                to="/login"
-                className="inline-flex items-center rounded-md bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-white"
-              >
-                Back to sign in
-              </Link>
-            </div>
-          </ErrorState>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-900 px-4">
-      <LoadingState label="Confirming your GitHub sign-in…" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-0 px-4 py-12 text-slate-200">
+      <AppBackground />
+      <LoginVisual />
+      <div className="relative z-10 w-full max-w-md">
+        <p className="tech-label mb-3 text-center text-accent-indigo/70">SMARTSDLC SECURITY GATEWAY</p>
+        {error ? (
+          <div className="corner-ticks border border-white/[0.08] bg-[#0c0d16]/80 p-7 backdrop-blur-2xl sm:p-8">
+            <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/50 to-transparent" />
+            <ErrorState title="Sign-in failed" message={error}>
+              <div className="mt-4">
+                <Link to="/login" className="btn-primary">
+                  Back to sign in
+                </Link>
+              </div>
+            </ErrorState>
+          </div>
+        ) : (
+          <div className="corner-ticks border border-white/[0.08] bg-[#0c0d16]/80 p-8 backdrop-blur-2xl">
+            <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-indigo/50 to-transparent" />
+            <LoadingState label="Confirming your GitHub sign-in\u2026" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

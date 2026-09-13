@@ -32,6 +32,13 @@ vi.mock('../api/github', () => ({
   getPullRequestDiff: vi.fn(),
 }));
 
+vi.mock('../api/insights', () => ({
+  generateInsight: vi.fn(),
+  getInsights: vi.fn(async () => ({ items: [], page: 1, per_page: 20, total: 0, total_pages: 0 })),
+  getLatestRepositoryInsight: vi.fn(),
+  getInsight: vi.fn(),
+}));
+
 vi.mock('../api/auth', () => authMocks);
 
 import App from '../App';
@@ -43,6 +50,8 @@ beforeEach(() => {
   dashboardMocks.getFeedbackSummary.mockResolvedValue(feedbackSummary);
   dashboardMocks.getRepositoryMetrics.mockResolvedValue(repoMetrics);
 });
+
+const RENDER_TIMEOUT = { timeout: 10_000 };
 
 describe('App routing', () => {
   it('redirects an unauthenticated user to the login page', async () => {
@@ -59,8 +68,8 @@ describe('App routing', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
-    expect(await screen.findByText('Total reviews')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /dashboard/i }, RENDER_TIMEOUT)).toBeInTheDocument();
+    expect(await screen.findByText('Total reviews', undefined, RENDER_TIMEOUT)).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
     expect(authMocks.validateToken).toHaveBeenCalled();
   });

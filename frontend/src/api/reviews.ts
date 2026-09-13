@@ -1,13 +1,16 @@
 import { http } from './client';
-import type { FeedbackAction, FeedbackHistoryResponse, FeedbackItem, ReviewResponse } from '../types';
+import type { FeedbackAction, FeedbackHistoryResponse, FeedbackItem, ReviewResponse, ScmProvider } from '../types';
 
 export async function runReview(
   owner: string,
   repo: string,
   number: number,
+  provider: ScmProvider = 'github',
 ): Promise<ReviewResponse> {
   const { data } = await http.post<ReviewResponse>(
     `/reviews/${owner}/${repo}/${number}`,
+    null,
+    { params: provider === 'gitlab' ? { provider } : {} },
   );
   return data;
 }

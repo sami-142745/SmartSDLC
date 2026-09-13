@@ -20,11 +20,19 @@ function tokenizeDiff(diff: string): DiffLine[] {
 }
 
 const LINE_STYLES: Record<DiffLineType, string> = {
-  meta: 'bg-slate-100 text-slate-500',
-  hunk: 'bg-sky-50 text-sky-800 font-medium',
-  add: 'bg-emerald-50 text-emerald-900',
-  del: 'bg-red-50 text-red-900',
-  context: 'text-slate-700',
+  meta: 'bg-transparent text-slate-600',
+  hunk: 'bg-accent-indigo/[0.06] text-accent-indigo font-medium',
+  add: 'bg-emerald-500/[0.06] text-emerald-300',
+  del: 'bg-rose-500/[0.06] text-rose-300',
+  context: 'text-slate-400',
+};
+
+const GUTTER: Record<DiffLineType, string> = {
+  meta: '',
+  hunk: '',
+  add: '+',
+  del: '-',
+  context: ' ',
 };
 
 export function DiffViewer({ diff }: { diff: string }) {
@@ -36,17 +44,15 @@ export function DiffViewer({ diff }: { diff: string }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Unified diff
-        </span>
+    <div className="overflow-hidden border border-white/[0.06] bg-surface-0">
+      <div className="flex items-center justify-between border-b border-white/[0.06] bg-surface-2/50 px-4 py-2.5">
+        <span className="font-mono text-xs text-slate-400">unified diff</span>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-500">{lines.length} lines</span>
+          <span className="font-mono text-xs tabular-nums text-slate-600">{lines.length} lines</span>
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-100"
+            className="btn-secondary px-2.5 py-1 text-xs"
           >
             {collapsed ? 'Expand' : 'Collapse'}
           </button>
@@ -56,9 +62,20 @@ export function DiffViewer({ diff }: { diff: string }) {
         <div className="max-h-[560px] overflow-auto">
           <div className="min-w-max font-mono text-[13px] leading-5">
             {lines.map((line, index) => (
-              <div key={index} className={`flex px-3 ${LINE_STYLES[line.type]}`}>
-                <span className="w-10 shrink-0 select-none pr-3 text-right text-xs text-slate-400">
+              <div key={index} className={`flex ${LINE_STYLES[line.type]}`}>
+                <span className="w-10 shrink-0 select-none pr-3 text-right text-xs text-slate-600">
                   {index + 1}
+                </span>
+                <span
+                  className={`w-5 shrink-0 select-none pr-3 text-right ${
+                    line.type === 'add'
+                      ? 'text-emerald-400/60'
+                      : line.type === 'del'
+                        ? 'text-rose-400/60'
+                        : 'text-transparent'
+                  }`}
+                >
+                  {GUTTER[line.type]}
                 </span>
                 <span className="whitespace-pre-wrap break-all">{line.content || ' '}</span>
               </div>

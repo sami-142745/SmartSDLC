@@ -375,3 +375,40 @@ async def aggregate_feedback_by_severity(user_id: int) -> list[dict[str, Any]]:
         },
     ]
     return [doc async for doc in db[FEEDBACK_COLLECTION].aggregate(pipeline)]
+
+
+async def list_reviews_for_scope(
+    user_id: int,
+    owner: str,
+    repository: str,
+    pull_request_number: int | None = None,
+) -> list[dict[str, Any]]:
+    """Chronological (oldest-first) reviews for a repository, optionally scoped to a PR."""
+    db = get_db()
+    query: dict[str, Any] = {"user_id": user_id, "owner": owner, "repository": repository}
+    if pull_request_number is not None:
+        query["pull_request_number"] = pull_request_number
+    cursor = db[REVIEWS_COLLECTION].find(query).sort("created_at", 1)
+    return [review async for review in cursor]
+
+
+async def list_findings_for_reviews(review_ids: list[str]) -> list[dict[str, Any]]:
+    if not review_ids:
+        return []
+    db = get_db()
+    cursor = db[FINDINGS_COLLECTION].find({"review_id": {"$in": review_ids}}, {"_id": 0})
+    return [finding async for finding in cursor]
+
+
+async def list_feedback_for_scope(
+    user_id: int,
+    owner: str,
+    repository: str,
+    pull_request_number: int | None = None,
+) -> list[dict[str, Any]]:
+    db = get_db()
+    query: dict[str, Any] = {"user_id": user_id, "owner": owner, "repository": repository}
+    if pull_request_number is not None:
+        query["pull_request_number"] = pull_request_number
+    cursor = db[FEEDBACK_COLLECTION].find(query).sort("created_at", 1)
+    return [doc async for doc in cursor]

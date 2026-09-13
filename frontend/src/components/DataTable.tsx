@@ -24,40 +24,41 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+      <div className="rounded-xl border border-dashed border-white/[0.08] bg-surface-1/40 px-4 py-12 text-center text-sm text-slate-500">
         {emptyMessage}
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-      <table className="min-w-full divide-y divide-slate-200 text-sm">
-        <thead className="bg-slate-50">
+    <div className="t-table-wrap overflow-hidden rounded-xl shadow-elevated">
+      <table className="t-table">
+        <thead className="t-table-head">
           <tr>
             {columns.map((column) => (
               <th
                 key={column.key}
                 scope="col"
-                className={`px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 ${column.className ?? ''}`}
+                className={`t-table-th ${column.className ?? ''}`}
               >
                 {column.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-white/[0.04]">
           {rows.map((row) => (
             <tr
               key={rowKey(row)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className={onRowClick ? 'cursor-pointer hover:bg-slate-50' : ''}
+              className={
+                onRowClick
+                  ? 'cursor-pointer transition-all duration-100 hover:bg-accent-indigo/[0.04] hover:shadow-[inset_2px_0_0_rgba(99,102,241,0.4)]'
+                  : ''
+              }
             >
               {columns.map((column) => (
-                <td
-                  key={column.key}
-                  className={`px-4 py-3 align-top text-slate-700 ${column.className ?? ''}`}
-                >
+                <td key={column.key} className={`t-table-td ${column.className ?? ''}`}>
                   {column.render(row)}
                 </td>
               ))}

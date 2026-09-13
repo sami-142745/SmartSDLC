@@ -3,25 +3,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.schemas.dashboard import FeedbackHistoryResponse, FeedbackItem, FeedbackRequest
 from app.schemas.review import ReviewResponse
 from app.services.github_client import GitHubAPIError, GitHubClient
-from app.services import dashboard_service, review_repository
+from app.services.gitlab_client import GitLabClient
+from app.services.scm import ScmProvider, scm_error_response
+from app.services import dashboard_service, review_repository, workflow_service
 from app.services.review_service import run_review
 from app.services.security import get_current_user, require_github_token
 
 router = APIRouter()
 
-_ERROR_STATUS_BY_CATEGORY = {
-    "authentication": 401,
-    "not_found": 404,
-    "rate_limit": 429,
-    "server": 502,
-    "network": 503,
-    "unknown": 502,
-}
 
-
-def _error_from_github(e: GitHubAPIError) -> HTTPException:
-    status_code = _ERROR_STATUS_BY_CATEGORY.get(e.category, 502)
-    return HTTPException(status_code=status_code, detail=e.message)
+def _client_for(provider: ScmProvider, token: str) -> GitHubClient | GitLabClient:
+    if provider is ScmProvider.gitlab:
+        return GitLabClient(token)
+    return GitHubClient(token)
 
 
 @router.post("/reviews/{owner}/{repo}/{number}", response_model=ReviewResponse)
@@ -29,13 +23,43 @@ async def create_review(
     owner: str,
     repo: str,
     number: int,
+    provider: ScmProvider = Query(ScmProvider.github),
     token: str = Depends(require_github_token),
     user: dict = Depends(get_current_user),
 ):
+    user_id = user["github_id"]
+    workflow_id = await workflow_service.begin_workflow(
+        user_id=user_id,
+        owner=owner,
+        repository=repo,
+        pull_request_number=number,
+        trigger="manual",
+        initiated_by="api",
+        provider=provider.value,
+    )
+    if workflow_id:
+        await workflow_service.advance_workflow(workflow_id, "VALIDATED")
+
+    async def progress(stage: str) -> None:
+        await workflow_service.advance_workflow(workflow_id, stage)
+
     try:
-        return await run_review(GitHubClient(token), owner, repo, number, user_id=user["github_id"])
+        result = await run_review(
+            _client_for(provider, token),
+            owner,
+            repo,
+            number,
+            user_id=user_id,
+            progress=progress,
+        )
+        await workflow_service.complete_workflow(workflow_id, review_id=result.get("review_id"))
+        return result
     except GitHubAPIError as e:
-        raise _error_from_github(e)
+        await workflow_service.fail_workflow(workflow_id, error=e.message)
+        raise scm_error_response(provider, e)
+    except Exception as e:
+        await workflow_service.fail_workflow(workflow_id, error=str(e) or "Unexpected review failure")
+        raise
 
 
 @router.get("/reviews/{owner}/{repo}/{number}", response_model=list[ReviewResponse])
