@@ -1,4 +1,4 @@
-import { severityBadgeClasses, severityLabel } from '../utils/severity';
+import { severityBadgeClasses, severityDotColor, severityLabel } from '../utils/severity';
 
 interface SeverityBadgeProps {
   severity: string | null | undefined;
@@ -6,9 +6,12 @@ interface SeverityBadgeProps {
 
 export function SeverityBadge({ severity }: SeverityBadgeProps) {
   return (
-    <span
-      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${severityBadgeClasses(severity)}`}
-    >
+    <span className={`chip relative inline-flex items-center gap-1.5 ${severityBadgeClasses(severity)}`}>
+      <span
+        aria-hidden
+        className="relative h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: severityDotColor(severity), boxShadow: `0 0 6px ${severityDotColor(severity)}` }}
+      />
       {severityLabel(severity)}
     </span>
   );

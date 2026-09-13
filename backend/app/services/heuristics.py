@@ -5,7 +5,7 @@ import re
 import uuid
 from typing import Any
 
-SEVERITY_HINTS: list[tuple[re.Pattern[str], str, str, str, float, str]] = [
+SEVERITY_HINTS: list[tuple[re.Pattern[str], str, str, str, float, str, str]] = [
     (
         re.compile(
             r"\b(?:BEGIN |-----BEGIN )?(?:RSA |DSA |EC |OPENSSH |PGP )?(?:PRIVATE KEY|PRIVATE KEY-----|"
@@ -16,6 +16,7 @@ SEVERITY_HINTS: list[tuple[re.Pattern[str], str, str, str, float, str]] = [
         "critical",
         0.95,
         "Remove hardcoded credentials and load secrets from environment variables or a secure secret manager.",
+        "security",
     ),
     (
         re.compile(
@@ -28,6 +29,7 @@ SEVERITY_HINTS: list[tuple[re.Pattern[str], str, str, str, float, str]] = [
         "high",
         0.85,
         "Remove hardcoded credentials and load secrets from environment variables or a secure secret manager.",
+        "security",
     ),
     (
         re.compile(
@@ -40,6 +42,7 @@ SEVERITY_HINTS: list[tuple[re.Pattern[str], str, str, str, float, str]] = [
         "high",
         0.8,
         "Remove hardcoded credentials and load secrets from environment variables or a secure secret manager.",
+        "security",
     ),
     (
         re.compile(r"\b(?:pickle|yaml)\s*\.\s*(?:safe_)?(?:load|loads)\s*\(", re.IGNORECASE),
@@ -48,6 +51,7 @@ SEVERITY_HINTS: list[tuple[re.Pattern[str], str, str, str, float, str]] = [
         "high",
         0.8,
         "Use safe serialization formats and validate untrusted data before deserialization.",
+        "security",
     ),
     (
         re.compile(r"\b(?:eval|exec|os\.system|subprocess\s*\.\s*(?:call|run|Popen)|child_process)\s*\("),
@@ -56,6 +60,7 @@ SEVERITY_HINTS: list[tuple[re.Pattern[str], str, str, str, float, str]] = [
         "high",
         0.75,
         "Avoid eval() and other dynamic execution of untrusted input. Use a safe parser or allowlisted operations instead.",
+        "security",
     ),
     (
         re.compile(
@@ -68,6 +73,7 @@ SEVERITY_HINTS: list[tuple[re.Pattern[str], str, str, str, float, str]] = [
         "high",
         0.7,
         "Use parameterized queries/prepared statements or an ORM instead of building SQL with untrusted input.",
+        "security",
     ),
     (
         re.compile(r"\bchmod\s+\d{4}\b|<\s*(?:script|iframe|object)\b|\.innerHTML\s*=", re.IGNORECASE),
@@ -76,8 +82,110 @@ SEVERITY_HINTS: list[tuple[re.Pattern[str], str, str, str, float, str]] = [
         "medium",
         0.6,
         "Escape or sanitize untrusted output using the appropriate context-aware mechanism.",
+        "security",
     ),
 ]
+
+BUG_HINTS: list[tuple[re.Pattern[str], str, str, str, float, str, str]] = [
+    (
+        re.compile(r"\bif\s*\(?\s*[a-zA-Z_$]\w*\s*=\s*(?!=)(?!:)"),
+        "Assignment instead of comparison",
+        "An assignment appears where a condition is expected; this condition is usually always-true or a typo for ==.",
+        "high",
+        0.85,
+        "Use == for equality checks inside conditions (e.g. if x == expected instead of if x = expected).",
+        "bug",
+    ),
+    (
+        re.compile(r"\b([a-zA-Z_$]\w*)\s*==\s*\1\b"),
+        "Self-comparison (always true)",
+        "A value is compared with itself, so the condition is always true; this is usually a swapped variable.",
+        "medium",
+        0.7,
+        "Compare the value against the intended operand, not itself.",
+        "bug",
+    ),
+    (
+        re.compile(r"\b([a-zA-Z_$]\w*)\s*!=\s*\1\b"),
+        "Self-negated comparison (always false)",
+        "A value is compared to itself with !=, so the condition is always false; this is usually a swapped variable.",
+        "medium",
+        0.7,
+        "Compare the value against the intended operand, not itself.",
+        "bug",
+    ),
+    (
+        re.compile(r"^\s*([a-zA-Z_$]\w*)\s*=\s*\1\s*(?:#.*)?$"),
+        "Pointless self-assignment",
+        "A variable is assigned its own value, which does nothing; the intended expression may be missing.",
+        "low",
+        0.75,
+        "Remove the self-assignment or assign the intended value.",
+        "bug",
+    ),
+    (
+        re.compile(r"\b([a-zA-Z_$]\w*)\s*(?:[/%])+\s*0(?:\.0+)?(?!\.\d)\b"),
+        "Division or modulo by zero",
+        "An arithmetic expression divides or takes modulo by a zero literal, which raises a runtime error.",
+        "high",
+        0.8,
+        "Guard the divisor so it can never be zero (or zero-point-zero) at runtime.",
+        "bug",
+    ),
+    (
+        re.compile(r"\bdef\s+\w+\s*\([^)]*=\s*(?:\[\]|\{\}|list\s*\(\s*\)|set\s*\(\s*\)|dict\s*\(\s*\)|[^)\]]*\s*#\s*Mutable)"),
+        "Mutable default argument",
+        "A mutable object is used as a default argument; it is shared across all calls and accumulates state.",
+        "medium",
+        0.8,
+        "Use None as the default and construct the mutable inside the function body.",
+        "bug",
+    ),
+    (
+        re.compile(
+            r"^\s*except(?:\s+[a-zA-Z_]\w*(?:\s+as\s+\w+)?)?\s*:\s*(?:pass|break|continue)\s*(?:#.*)?$"
+            r"|^\s*except\s*:\s*(?:#.*)?$"
+        ),
+        "Broad exception silently swallowed",
+        "An exception is caught and silently ignored, which hides failures and makes debugging harder.",
+        "medium",
+        0.6,
+        "Handle the exception explicitly or re-raise it; avoid bare except and silent pass blocks.",
+        "bug",
+    ),
+    (
+        re.compile(
+            r"^\s*(?:list|dict|set|tuple|str|int|float|bytes|bool|input|id|map|filter|zip|len|range|sum|min|max|"
+            r"sorted|reversed|type|object|print|format)\s*=[^=]"
+        ),
+        "Variable shadows built-in name",
+        "A variable reuses a built-in name, which can break unrelated code that expects the built-in behavior.",
+        "low",
+        0.55,
+        "Rename the variable so it does not shadow the built-in.",
+        "bug",
+    ),
+    (
+        re.compile(r"\b[a-zA-Z_]\w*\s*==\s*None\b"),
+        "None compared with ==",
+        "None identity compares with ==, which is fragile; None is a singleton meant for is comparisons.",
+        "medium",
+        0.75,
+        "Use `is None` / `is not None` instead of == / != None.",
+        "bug",
+    ),
+    (
+        re.compile(r"\b[a-zA-Z_]\w*\s+(?:==|is)\s+(?:True|False)\b"),
+        "Identity comparison with boolean constant",
+        "A value is compared against a boolean literal; return the boolean expression directly instead.",
+        "medium",
+        0.75,
+        "Return the boolean value directly or compare with is when checking identity.",
+        "bug",
+    ),
+]
+
+ALL_HINTS = SEVERITY_HINTS + BUG_HINTS
 
 _FULL_LINE_COMMENT_PREFIXES = ("#", "//", "<!--")
 
@@ -173,7 +281,8 @@ def run_heuristics(patch: str, filename: str | None = None) -> list[dict[str, An
     Every finding is produced with:
     - source = "heuristic"
     - severity = "low" (advisory only; the review score grades it)
-    - heuristic_severity = the true pattern severity ("critical"/"high"/"medium")
+    - category = the true pattern category ("security" or "bug")
+    - heuristic_severity = the true pattern severity ("critical"/"high"/"medium"/"low")
     - heuristic_confidence = pattern confidence
     - recommendation = category-specific remediation for the matched pattern
 
@@ -199,24 +308,24 @@ def run_heuristics(patch: str, filename: str | None = None) -> list[dict[str, An
         if _scan_line(text, state):
             continue
 
-        evidence: list[tuple[str, str, str, float, str]] = []
-        for pattern, title, description, hint_severity, confidence, recommendation in SEVERITY_HINTS:
+        evidence: list[tuple[str, str, str, float, str, str]] = []
+        for pattern, title, description, hint_severity, confidence, recommendation, category in ALL_HINTS:
             if pattern.search(text):
-                evidence.append((title, description, hint_severity, confidence, recommendation))
+                evidence.append((title, description, hint_severity, confidence, recommendation, category))
         if not evidence:
             continue
 
         file_path, target_line = _current_file_and_line(patch_lines, idx)
         remaining_line = re.sub(r"^\d+\s*", "", text)
         sanitized = remaining_line.strip()[:256]
-        for title, description, hint_severity, confidence, recommendation in evidence:
+        for title, description, hint_severity, confidence, recommendation, category in evidence:
             findings.append(
                 {
                     "id": _finding_id(title, file_path, target_line),
                     "title": title,
                     "description": description,
                     "severity": "low",
-                    "category": "security",
+                    "category": category,
                     "file": file_path,
                     "line": target_line,
                     "code": sanitized,

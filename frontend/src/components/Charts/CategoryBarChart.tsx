@@ -3,7 +3,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -18,15 +17,35 @@ interface CategoryBarChartProps {
   height?: number;
 }
 
-const COLORS = ['#6366f1', '#0ea5e9', '#f59e0b', '#10b981', '#f43f5e', '#8b5cf6'];
+const COLORS: Record<string, string> = {
+  Security: '#818cf8',
+  Bug: '#fb7185',
+  Performance: '#38bdf8',
+  Complexity: '#a78bfa',
+  Maintainability: '#fbbf24',
+  Style: '#94a3b8',
+};
 
-export function CategoryBarChart({ data, height = 260 }: CategoryBarChartProps) {
+const TOOLTIP_STYLE = {
+  background: 'rgba(13,15,26,0.92)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 10,
+  color: '#cbd5e1',
+  fontSize: 12,
+  boxShadow: '0 16px 40px -10px rgba(0,0,0,0.75), 0 0 0 1px rgba(99,102,241,0.12)',
+  backdropFilter: 'blur(12px)',
+};
+
+export function CategoryBarChart({ data, height = 220 }: CategoryBarChartProps) {
   const bars = (Object.keys(data) as Category[])
-    .map((key, index) => ({
-      name: CATEGORY_LABELS[key] ?? key,
-      count: data[key] ?? 0,
-      fill: COLORS[index % COLORS.length],
-    }))
+    .map((key) => {
+      const name = CATEGORY_LABELS[key] ?? key;
+      return {
+        name,
+        count: data[key] ?? 0,
+        fill: COLORS[name] ?? '#818cf8',
+      };
+    })
     .filter((bar) => bar.count > 0);
 
   if (bars.length === 0) {
@@ -35,15 +54,30 @@ export function CategoryBarChart({ data, height = 260 }: CategoryBarChartProps) 
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={bars} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="count" name="Findings" radius={[4, 4, 0, 0]}>
+      <BarChart data={bars} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+        <defs>
           {bars.map((bar) => (
-            <Cell key={bar.name} fill={bar.fill} />
+            <linearGradient key={`grad-${bar.name}`} id={`bar-grad-${bar.name}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={bar.fill} stopOpacity="0.92" />
+              <stop offset="100%" stopColor={bar.fill} stopOpacity="0.45" />
+            </linearGradient>
+          ))}
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.07)" vertical={false} />
+        <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={{ stroke: 'rgba(148,163,184,0.1)' }} />
+        <YAxis allowDecimals={false} tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} />
+        <Tooltip
+          contentStyle={TOOLTIP_STYLE}
+          cursor={{ fill: 'rgba(255,255,255,0.025)' }}
+          formatter={(value) => [value, 'Findings']}
+        />
+        <Bar dataKey="count" name="Findings" radius={[4, 4, 0, 0]} maxBarSize={40}>
+          {bars.map((bar) => (
+            <Cell
+              key={bar.name}
+              fill={`url(#bar-grad-${bar.name})`}
+              style={{ filter: `drop-shadow(0 0 8px ${bar.fill}40)` }}
+            />
           ))}
         </Bar>
       </BarChart>

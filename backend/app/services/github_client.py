@@ -1,20 +1,19 @@
 from __future__ import annotations
 
+from urllib.parse import quote
+
 import httpx
+
+from app.services.scm import ScmAPIError
 
 GITHUB_API_BASE = "https://api.github.com"
 GITHUB_API_HEADERS = {"Accept": "application/vnd.github+json"}
 GITHUB_DIFF_ACCEPT = "application/vnd.github.v3.diff"
+GITHUB_RAW_ACCEPT = "application/vnd.github.raw"
 
 MAX_PER_PAGE = 100
 
-
-class GitHubAPIError(Exception):
-    def __init__(self, status_code: int, message: str, category: str = "unknown"):
-        self.status_code = status_code
-        self.message = message
-        self.category = category
-        super().__init__(message)
+GitHubAPIError = ScmAPIError
 
 
 def _new_http_client(**kwargs) -> httpx.AsyncClient:
@@ -61,6 +60,7 @@ def _to_repository(raw: dict) -> dict:
         "private": raw.get("private", False),
         "html_url": raw.get("html_url"),
         "default_branch": raw.get("default_branch"),
+        "description": raw.get("description"),
         "owner": (raw.get("owner") or {}).get("login"),
     }
 
@@ -171,5 +171,33 @@ class GitHubClient:
         resp = await self._get(
             f"/repos/{owner}/{repo}/pulls/{number}",
             accept=GITHUB_DIFF_ACCEPT,
+        )
+        return resp.text
+
+    async def get_repository_tree(
+        self,
+        owner: str,
+        repo: str,
+        ref: str | None = None,
+    ) -> dict:
+        tree_ref = quote(ref, safe="") if ref else "HEAD"
+        resp = await self._get(
+            f"/repos/{owner}/{repo}/git/trees/{tree_ref}",
+            params={"recursive": "1"},
+        )
+        return resp.json()
+
+    async def get_file_content(
+        self,
+        owner: str,
+        repo: str,
+        path: str,
+        ref: str | None = None,
+    ) -> str:
+        encoded = quote(path, safe="/")
+        resp = await self._get(
+            f"/repos/{owner}/{repo}/contents/{encoded}",
+            params={"ref": ref} if ref else None,
+            accept=GITHUB_RAW_ACCEPT,
         )
         return resp.text

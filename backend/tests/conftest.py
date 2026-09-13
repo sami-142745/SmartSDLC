@@ -1,6 +1,7 @@
 import datetime
 
 import pytest
+from bson import ObjectId as _ObjectId
 from fastapi.testclient import TestClient
 
 from app.services.jwt_service import create_access_token
@@ -13,6 +14,10 @@ async def _noop_indexes() -> None:
 def _match_query(doc: dict, query: dict) -> bool:
     for key, cond in query.items():
         val = doc.get(key)
+        if isinstance(cond, _ObjectId):
+            if str(val) != str(cond):
+                return False
+            continue
         if isinstance(cond, dict) and any(k in cond for k in ("$gte", "$lte", "$gt", "$lt")):
             if "$gte" in cond and (val is None or val < cond["$gte"]):
                 return False
@@ -127,7 +132,7 @@ class FakeCollection:
     def _next_id(self) -> str:
         return f"{len(self.docs) + 1:024d}"
 
-    def find(self, query=None):
+    def find(self, query=None, projection=None, **kwargs):
         filtered = [d for d in self.docs if _match_query(d, query or {})]
         return FakeCursor(filtered)
 
@@ -171,6 +176,15 @@ class FakeCollection:
     async def create_index(self, *args, **kwargs):
         return None
 
+    async def delete_many(self, query=None):
+        self.docs = [d for d in self.docs if not _match_query(d, query or {})]
+
+        class _DeleteResult:
+            deleted_count = 0
+            acknowledged = True
+
+        return _DeleteResult()
+
 
 class FakeDb:
     def __init__(self):
@@ -180,6 +194,10 @@ class FakeDb:
             "review_feedback": FakeCollection(),
             "users": FakeCollection(),
             "webhook_events": FakeCollection(),
+            "documents": FakeCollection(),
+            "insights": FakeCollection(),
+            "feedback_learning": FakeCollection(),
+            "workflows": FakeCollection(),
         }
 
     def __getitem__(self, name):
@@ -196,6 +214,14 @@ def client(monkeypatch):
 
     monkeypatch.setattr("app.services.user_repository.ensure_indexes", _noop_indexes)
     monkeypatch.setattr("app.services.review_repository.ensure_indexes", _noop_indexes)
+    monkeypatch.setattr("app.services.document_repository.ensure_indexes", _noop_indexes)
+    monkeypatch.setattr("app.services.insight_repository.ensure_indexes", _noop_indexes)
+    monkeypatch.setattr("app.services.learning_repository.ensure_indexes", _noop_indexes)
+    monkeypatch.setattr("app.services.workflow_repository.ensure_indexes", _noop_indexes)
+    monkeypatch.setattr("app.services.webhook_repository.ensure_indexes", _noop_indexes)
+    monkeypatch.setattr("app.services.workflow_repository.get_db", lambda: FakeDb())
+    webhook_db = FakeDb()
+    monkeypatch.setattr("app.services.webhook_repository.get_db", lambda: webhook_db)
     with TestClient(app) as c:
         yield c
 
@@ -204,6 +230,16 @@ def client(monkeypatch):
 def fake_db(monkeypatch):
     db = FakeDb()
     monkeypatch.setattr("app.services.review_repository.get_db", lambda: db)
+    monkeypatch.setattr("app.services.learning_repository.get_db", lambda: db)
+    monkeypatch.setattr("app.services.workflow_repository.get_db", lambda: db)
+    return db
+
+
+@pytest.fixture
+def insight_db(monkeypatch):
+    db = FakeDb()
+    monkeypatch.setattr("app.services.review_repository.get_db", lambda: db)
+    monkeypatch.setattr("app.services.insight_repository.get_db", lambda: db)
     return db
 
 

@@ -11,19 +11,19 @@ export const SEVERITY_LABELS: Record<Severity, string> = {
 };
 
 export const SEVERITY_BADGE_CLASSES: Record<Severity, string> = {
-  critical: 'bg-red-100 text-red-800 border-red-300',
-  high: 'bg-orange-100 text-orange-800 border-orange-300',
-  medium: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  low: 'bg-blue-100 text-blue-800 border-blue-300',
-  info: 'bg-slate-100 text-slate-700 border-slate-300',
+  critical: 'border-rose-500/25 bg-rose-500/[0.06] text-rose-300',
+  high: 'border-orange-400/25 bg-orange-400/[0.06] text-orange-300',
+  medium: 'border-amber-400/25 bg-amber-400/[0.06] text-amber-300',
+  low: 'border-sky-400/25 bg-sky-400/[0.06] text-sky-300',
+  info: 'border-slate-500/30 bg-slate-500/[0.06] text-slate-400',
 };
 
 export const SEVERITY_CHART_COLORS: Record<Severity, string> = {
-  critical: '#dc2626',
-  high: '#ea580c',
-  medium: '#eab308',
-  low: '#2563eb',
-  info: '#6b7280',
+  critical: '#f87171',
+  high: '#fb923c',
+  medium: '#fbbf24',
+  low: '#38bdf8',
+  info: '#94a3b8',
 };
 
 export const CATEGORY_ORDER: Category[] = [
@@ -56,6 +56,21 @@ export function severityBadgeClasses(value: string | null | undefined): string {
   return SEVERITY_BADGE_CLASSES.info;
 }
 
+export function severityDotColor(value: string | null | undefined): string {
+  switch (value) {
+    case 'critical':
+      return '#f87171';
+    case 'high':
+      return '#fb923c';
+    case 'medium':
+      return '#fbbf24';
+    case 'low':
+      return '#38bdf8';
+    default:
+      return '#94a3b8';
+  }
+}
+
 export function categoryLabel(value: string | null | undefined): string {
   if (value && value in CATEGORY_LABELS) return CATEGORY_LABELS[value as Category];
   return value ?? 'Other';
@@ -69,8 +84,8 @@ export function sourceLabel(value: string | null | undefined): string {
 }
 
 export function sourceBadgeClasses(value: string | null | undefined): string {
-  if (value === 'gemini') return 'bg-violet-100 text-violet-800 border-violet-300';
-  if (value === 'heuristic') return 'bg-teal-100 text-teal-800 border-teal-300';
-  if (value === 'combined') return 'bg-indigo-100 text-indigo-800 border-indigo-300';
-  return 'bg-slate-100 text-slate-700 border-slate-300';
+  if (value === 'gemini') return 'border-violet-400/25 bg-violet-400/[0.06] text-violet-300';
+  if (value === 'heuristic') return 'border-sky-400/25 bg-sky-400/[0.06] text-sky-300';
+  if (value === 'combined') return 'border-accent-indigo/25 bg-accent-indigo/[0.06] text-accent-indigo';
+  return 'border-slate-500/30 bg-slate-500/[0.06] text-slate-400';
 }

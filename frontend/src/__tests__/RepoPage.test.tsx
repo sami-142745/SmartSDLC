@@ -72,7 +72,7 @@ describe('RepoPage', () => {
 
     const closedTab = screen.getByRole('button', { name: /^closed$/i });
     fireEvent.click(closedTab);
-    expect(mocks.getPullRequests).toHaveBeenLastCalledWith('acme', 'webapp', 'closed', 1, 30);
+    expect(mocks.getPullRequests).toHaveBeenLastCalledWith('acme', 'webapp', 'closed', 1, 30, 'github');
   });
 
   it('shows an empty state when there are no pull requests', async () => {

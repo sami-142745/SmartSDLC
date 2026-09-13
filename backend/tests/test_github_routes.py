@@ -146,6 +146,86 @@ def test_endpoints_still_require_auth(client):
     assert client.get("/pullrequests/a/b/1").status_code == 401
 
 
+class FakeGitLabClient:
+    def __init__(self, token):
+        self.token = token
+
+    async def list_repositories(self, page=1, per_page=30):
+        return {
+            "repositories": [
+                {
+                    "id": 402,
+                    "name": "gl-lab",
+                    "full_name": "acme/gl-lab",
+                    "private": True,
+                    "html_url": "https://gitlab.com/acme/gl-lab",
+                    "default_branch": "main",
+                    "owner": "acme",
+                }
+            ],
+            "page": page,
+            "per_page": per_page,
+            "has_more": False,
+        }
+
+
+def test_list_repositories_routes_to_gitlab_provider(client, auth_headers, monkeypatch):
+    created = {}
+
+    class RecordingGitLabClient(FakeGitLabClient):
+        def __init__(self, token):
+            super().__init__(token)
+            created["token"] = token
+
+    monkeypatch.setattr("app.routers.github.GitLabClient", RecordingGitLabClient)
+    resp = client.get("/repositories?provider=gitlab", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["repositories"][0]["full_name"] == "acme/gl-lab"
+    assert created["token"] == "gho_test"
+
+
+def test_list_repositories_defaults_to_github_provider(client, auth_headers, monkeypatch):
+    monkeypatch.setattr("app.routers.github.GitLabClient", FakeGitLabClient)
+    resp = client.get("/repositories", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["repositories"][0]["full_name"] == "octocat/Hello-World"
+
+
+def test_gitlab_auth_error_does_not_return_401(client, auth_headers, monkeypatch):
+    """GitLab rejects the reused GitHub token with 401 — surface that as a
+    configuration error (400), never as a session expiry (401), so the
+    frontend does not log the user out."""
+
+    class FailingGitLabClient(FakeGitLabClient):
+        async def list_repositories(self, page=1, per_page=30):
+            from app.services.scm import ScmAPIError
+
+            raise ScmAPIError(401, "Invalid token", category="authentication")
+
+    monkeypatch.setattr("app.routers.github.GitLabClient", FailingGitLabClient)
+    resp = client.get("/repositories?provider=gitlab", headers=auth_headers)
+    assert resp.status_code == 400
+    assert "GitLab" in resp.json()["detail"]
+    assert "Personal Access Token" in resp.json()["detail"]
+
+
+def test_github_auth_error_still_returns_401(client, auth_headers, monkeypatch):
+    """A genuinely failed GitHub token keeps its 401 semantics (session)."""
+
+    class FailingGitHubClient:
+        def __init__(self, token):
+            self.token = token
+
+        async def list_repositories(self, page=1, per_page=30):
+            from app.services.scm import ScmAPIError
+
+            raise ScmAPIError(401, "Bad credentials", category="authentication")
+
+    monkeypatch.setattr("app.routers.github.GitHubClient", FailingGitHubClient)
+    resp = client.get("/repositories", headers=auth_headers)
+    assert resp.status_code == 401
+
+
 def test_github_connect_success(client, auth_headers, monkeypatch):
     profile = {"id": 7, "login": "octocat", "name": "Octo Cat", "email": None, "avatar_url": None}
     saved = {}

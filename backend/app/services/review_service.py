@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import Any, Callable
 
-from app.services import review_repository, severity
+from app.services import feedback_learning_service, review_repository, severity, workflow_service
 from app.services.config import settings
 from app.services.gemini_service import GeminiUnavailable, review_code
 from app.services.github_client import GitHubAPIError, GitHubClient
@@ -80,6 +80,7 @@ def _build_response(review: dict[str, Any]) -> dict[str, Any]:
         "pull_request_number": review["pull_request_number"],
         "pull_request_title": review["pull_request_title"],
         "commit_sha": review.get("commit_sha"),
+        "review_id": review.get("review_id"),
         "findings": findings,
         "heuristic_finding_count": sum(1 for f in findings if f.get("source") in ("heuristic", "combined")),
         "gemini_finding_count": sum(1 for f in findings if f.get("source") in ("gemini", "combined")),
@@ -99,6 +100,7 @@ async def run_review(
     number: int,
     *,
     user_id: int | None = None,
+    progress: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
     started = time.monotonic()
     try:
@@ -106,6 +108,9 @@ async def run_review(
         raw_files = await github.get_pull_request_files(owner, repo, number)
     except GitHubAPIError:
         raise
+
+    if progress:
+        progress("FETCHING")
 
     context = _review_context(pull_request, raw_files, f"{owner}/{repo}")
     heuristic = context["heuristic_findings"]
@@ -121,8 +126,23 @@ async def run_review(
             status = "gemini_unavailable"
             error = str(exc)
 
+    if progress:
+        progress("ANALYZING")
+
     findings = _merge_findings(heuristic, gemini)
     scoring = severity.score_findings(findings)
+
+    if user_id is not None:
+        categories = {finding.get("category") or "unknown" for finding in findings}
+        weights = await feedback_learning_service.resolve_learning_weights(
+            user_id, owner, repo, categories
+        )
+    else:
+        weights = {}
+    findings = feedback_learning_service.annotate_findings(findings, weights)
+
+    if progress:
+        progress("GENERATING_REVIEW")
 
     duration_ms = int((time.monotonic() - started) * 1000)
     review_id = await review_repository.save_review(
@@ -139,6 +159,8 @@ async def run_review(
         error=error,
         user_id=user_id,
     )
+    if progress:
+        progress("PERSISTING")
     return _build_response(
         {
             "status": status,
@@ -147,6 +169,7 @@ async def run_review(
             "pull_request_number": number,
             "pull_request_title": pull_request.get("title"),
             "commit_sha": pull_request.get("head_sha") or pull_request.get("head", {}).get("sha"),
+            "review_id": review_id,
             "review_score": scoring["score"] if status == "complete" else None,
             "review_severity": scoring["severity"] if status == "complete" else None,
             "duration_ms": duration_ms,
@@ -172,6 +195,32 @@ async def run_review_for_webhook(owner: str, repo: str, number: int, sender_logi
                 number,
             )
             return
-        await run_review(GitHubClient(token), owner, repo, number, user_id=(user or {}).get("github_id"))
+        workflow_id = await workflow_service.begin_workflow(
+            user_id=(user or {}).get("github_id"),
+            owner=owner,
+            repository=repo,
+            pull_request_number=number,
+            trigger="webhook",
+            initiated_by="webhook",
+            provider="github",
+        )
+        if workflow_id:
+            await workflow_service.advance_workflow(workflow_id, "VALIDATED")
+
+        async def progress(stage: str) -> None:
+            await workflow_service.advance_workflow(workflow_id, stage)
+
+        result = await run_review(
+            GitHubClient(token),
+            owner,
+            repo,
+            number,
+            user_id=(user or {}).get("github_id"),
+            progress=progress,
+        )
+        if workflow_id:
+            await workflow_service.complete_workflow(workflow_id, review_id=result.get("review_id"))
     except Exception:
         logger.exception("Background review failed for %s/%s#%s", owner, repo, number)
+        if "workflow_id" in locals() and workflow_id:
+            await workflow_service.fail_workflow(workflow_id, error="Background review failed")

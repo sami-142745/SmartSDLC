@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from app.services import review_repository
+from app.services import feedback_learning_service, review_repository
 
 SEVERITY_KEYS = ("critical", "high", "medium", "low", "info")
 CATEGORY_KEYS = ("security", "bug", "performance", "complexity", "maintainability", "style")
@@ -204,6 +204,13 @@ async def submit_feedback(
         owner=owner,
         repository=repository,
         pull_request_number=pull_request_number,
+    )
+    await feedback_learning_service.record_feedback(
+        user_id=user_id,
+        owner=owner,
+        repository=repository,
+        category=finding.get("category"),
+        action=action,
     )
     return _to_feedback_item(feedback)
 

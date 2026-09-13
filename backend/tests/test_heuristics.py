@@ -158,6 +158,189 @@ def test_full_line_comment_credential_produces_no_finding():
     assert findings == []
 
 
+def test_assignment_inside_condition_is_detected():
+    patch = """\
+@@ -0,0 +1,4 @@
++def check(value):
++    if result = fetch(value):
++        return result
++    return None
++"""
+    findings = run_heuristics(patch, filename="logic.py")
+    bug_findings = [f for f in findings if f["title"] == "Assignment instead of comparison"]
+    assert len(bug_findings) == 1
+    assert bug_findings[0]["line"] == 2
+    assert bug_findings[0]["category"] == "bug"
+    assert "==" in bug_findings[0]["recommendation"]
+
+
+def test_js_assignment_in_condition_is_detected():
+    patch = """\
+@@ -0,0 +1,1 @@
++if (x = y) {
++"""
+    findings = run_heuristics(patch, filename="app.js")
+    bug_findings = [f for f in findings if f["title"] == "Assignment instead of comparison"]
+    assert len(bug_findings) == 1
+    assert bug_findings[0]["line"] == 1
+    assert bug_findings[0]["category"] == "bug"
+
+
+def test_equality_comparison_is_not_flagged_as_assignment():
+    patch = """\
+@@ -0,0 +1,1 @@
++if result == other:
++"""
+    findings = run_heuristics(patch, filename="logic.py")
+    assert all(f["title"] != "Assignment instead of comparison" for f in findings)
+
+
+def test_self_comparison_and_self_negation_are_detected():
+    patch = """\
+@@ -0,0 +1,2 @@
++if result == result:
++    return result != result
++"""
+    findings = run_heuristics(patch, filename="logic.py")
+    always_true = [f for f in findings if f["title"] == "Self-comparison (always true)"]
+    always_false = [f for f in findings if f["title"] == "Self-negated comparison (always false)"]
+    assert len(always_true) == 1
+    assert always_true[0]["line"] == 1
+    assert len(always_false) == 1
+    assert always_false[0]["line"] == 2
+    assert always_true[0]["category"] == "bug"
+
+
+def test_pointless_self_assignment_is_detected():
+    patch = """\
+@@ -0,0 +1,1 @@
++    total = total
++"""
+    findings = run_heuristics(patch, filename="math.py")
+    bug_findings = [f for f in findings if f["title"] == "Pointless self-assignment"]
+    assert len(bug_findings) == 1
+    assert bug_findings[0]["line"] == 1
+    assert bug_findings[0]["category"] == "bug"
+
+
+def test_division_and_modulo_by_zero_are_detected():
+    patch = """\
+@@ -0,0 +1,2 @@
++ratio = total // 0
++remainder = balance % 0
++"""
+    findings = run_heuristics(patch, filename="math.py")
+    bug_findings = [f for f in findings if f["title"] == "Division or modulo by zero"]
+    assert len(bug_findings) == 2
+    assert {f["line"] for f in bug_findings} == {1, 2}
+    assert bug_findings[0]["category"] == "bug"
+
+
+def test_division_by_fraction_is_not_flagged_as_zero():
+    patch = """\
+@@ -0,0 +1,1 @@
++discount = total / 0.5
++"""
+    findings = run_heuristics(patch, filename="math.py")
+    assert all(f["title"] != "Division or modulo by zero" for f in findings)
+
+
+def test_mutable_default_argument_is_detected():
+    patch = """\
+@@ -0,0 +1,1 @@
++def add_item(store, item, cache={}):
++"""
+    findings = run_heuristics(patch, filename="store.py")
+    bug_findings = [f for f in findings if f["title"] == "Mutable default argument"]
+    assert len(bug_findings) == 1
+    assert bug_findings[0]["line"] == 1
+    assert "None as the default" in bug_findings[0]["recommendation"]
+    assert bug_findings[0]["category"] == "bug"
+
+
+def test_bare_except_is_detected_but_legit_except_is_not():
+    patch = """\
+@@ -0,0 +1,6 @@
++try:
++    run()
++except:
++    pass
++except ValueError:
++    pass
++"""
+    findings = run_heuristics(patch, filename="app.py")
+    bug_findings = [f for f in findings if f["title"] == "Broad exception silently swallowed"]
+    assert len(bug_findings) == 1
+    assert bug_findings[0]["line"] == 3
+    assert bug_findings[0]["category"] == "bug"
+
+
+def test_except_with_pass_on_same_line_is_detected():
+    patch = """\
+@@ -0,0 +1,1 @@
++except ValueError: pass
++"""
+    findings = run_heuristics(patch, filename="app.py")
+    bug_findings = [f for f in findings if f["title"] == "Broad exception silently swallowed"]
+    assert len(bug_findings) == 1
+    assert bug_findings[0]["line"] == 1
+
+
+def test_shadowed_builtin_is_detected():
+    patch = """\
+@@ -0,0 +1,1 @@
++list = [1, 2, 3]
++"""
+    findings = run_heuristics(patch, filename="views.py")
+    bug_findings = [f for f in findings if f["title"] == "Variable shadows built-in name"]
+    assert len(bug_findings) == 1
+    assert bug_findings[0]["category"] == "bug"
+
+
+def test_none_compared_with_equals_is_detected():
+    patch = """\
+@@ -0,0 +1,1 @@
++if value == None:
++"""
+    findings = run_heuristics(patch, filename="config.py")
+    bug_findings = [f for f in findings if f["title"] == "None compared with =="]
+    assert len(bug_findings) == 1
+    assert bug_findings[0]["line"] == 1
+    assert "is None" in bug_findings[0]["recommendation"]
+
+
+def test_boolean_identity_comparison_is_detected():
+    patch = """\
+@@ -0,0 +1,1 @@
++if running is True:
++"""
+    findings = run_heuristics(patch, filename="service.py")
+    bug_findings = [f for f in findings if f["title"] == "Identity comparison with boolean constant"]
+    assert len(bug_findings) == 1
+    assert bug_findings[0]["line"] == 1
+
+
+def test_bug_hints_carry_format_shapes_identical_to_security():
+    patch = """\
+@@ -0,0 +1,3 @@
++if result == result:
++    password = "hunter2"
++    list = [1, 2, 3]
++"""
+    findings = run_heuristics(patch, filename="app.py")
+    assert len(findings) >= 3
+    for f in findings:
+        assert f["source"] == "heuristic"
+        assert f["severity"] == "low"
+        assert "recommendation" in f
+        assert "heuristic_severity" in f
+        assert "heuristic_confidence" in f
+    by_title = {f["title"]: f for f in findings}
+    assert by_title["Self-comparison (always true)"]["category"] == "bug"
+    assert by_title["Hardcoded credential"]["category"] == "security"
+    assert by_title["Variable shadows built-in name"]["category"] == "bug"
+
+
 def test_comment_mentioning_same_eval_does_not_duplicate():
     patch = """\
 @@ -0,0 +1,10 @@

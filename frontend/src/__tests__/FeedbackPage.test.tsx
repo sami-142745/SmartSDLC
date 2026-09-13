@@ -6,12 +6,20 @@ const reviewsMocks = vi.hoisted(() => ({
   getFeedbackHistory: vi.fn(),
 }));
 
+const learningMocks = vi.hoisted(() => ({
+  getFeedbackLearning: vi.fn(),
+}));
+
 vi.mock('../api/reviews', () => ({
   ...reviewsMocks,
   getReviews: vi.fn(),
   getReviewFindings: vi.fn(),
   runReview: vi.fn(),
   submitFeedback: vi.fn(),
+}));
+
+vi.mock('../api/feedback_learning', () => ({
+  ...learningMocks,
 }));
 
 vi.mock('../api/auth', () => ({
@@ -23,7 +31,7 @@ vi.mock('../api/auth', () => ({
 
 import { FeedbackPage } from '../pages/FeedbackPage';
 import { renderWithProviders } from '../test/utils';
-import { TEST_TOKEN } from '../test/fixtures';
+import { TEST_TOKEN, emptyLearningResponse, learningResponse } from '../test/fixtures';
 import type { FeedbackHistoryResponse } from '../types';
 
 const feedback: FeedbackHistoryResponse = {
@@ -50,6 +58,7 @@ const feedback: FeedbackHistoryResponse = {
 describe('FeedbackPage', () => {
   it('lists feedback actions and links to the review', async () => {
     reviewsMocks.getFeedbackHistory.mockResolvedValue(feedback);
+    learningMocks.getFeedbackLearning.mockResolvedValue(emptyLearningResponse);
 
     renderWithProviders(
       <Routes>
@@ -76,9 +85,25 @@ describe('FeedbackPage', () => {
       total: 0,
       total_pages: 1,
     });
+    learningMocks.getFeedbackLearning.mockResolvedValue(emptyLearningResponse);
 
     renderWithProviders(<FeedbackPage />, { route: '/feedback', authToken: TEST_TOKEN });
 
     expect(await screen.findByText('No feedback yet')).toBeInTheDocument();
+    expect(
+      await screen.findByText(/no learning signals available yet/i),
+    ).toBeInTheDocument();
+  });
+
+  it('renders adaptive review prioritization signals', async () => {
+    reviewsMocks.getFeedbackHistory.mockResolvedValue(feedback);
+    learningMocks.getFeedbackLearning.mockResolvedValue(learningResponse);
+
+    renderWithProviders(<FeedbackPage />, { route: '/feedback', authToken: TEST_TOKEN });
+
+    expect(await screen.findByText(/adaptive review prioritization/i)).toBeInTheDocument();
+    expect(await screen.findByText('1.09x')).toBeInTheDocument();
+    expect(screen.getByText('0.89x')).toBeInTheDocument();
+    expect(screen.getByText('Bug')).toBeInTheDocument();
   });
 });

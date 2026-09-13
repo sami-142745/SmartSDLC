@@ -9,6 +9,21 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../api/dashboard', () => mocks);
 
+vi.mock('../api/insights', () => {
+  return {
+    generateInsight: vi.fn(),
+    getInsights: vi.fn(async () => ({
+      items: [],
+      page: 1,
+      per_page: 20,
+      total: 0,
+      total_pages: 0,
+    })),
+    getLatestRepositoryInsight: vi.fn(),
+    getInsight: vi.fn(),
+  };
+});
+
 vi.mock('../api/auth', () => ({
   exchangeCode: vi.fn(),
   getLoginUrl: vi.fn(),

@@ -140,7 +140,7 @@ def test_get_findings_requires_auth(client):
 
 
 def test_post_review_returns_complete(client, auth_headers, monkeypatch):
-    async def _fake_run_review(gh, o, r, n, user_id=None):
+    async def _fake_run_review(gh, o, r, n, user_id=None, **kwargs):
         return REVIEW_RESULT
 
     monkeypatch.setattr("app.routers.reviews.run_review", _fake_run_review)
@@ -151,7 +151,7 @@ def test_post_review_returns_complete(client, auth_headers, monkeypatch):
 
 
 def test_post_review_maps_github_not_found(client, auth_headers, monkeypatch):
-    async def _error_review(gh, o, r, n, user_id=None):
+    async def _error_review(gh, o, r, n, user_id=None, **kwargs):
         raise GitHubAPIError(404, "Not Found", "not_found")
 
     monkeypatch.setattr("app.routers.reviews.run_review", _error_review)
@@ -161,7 +161,7 @@ def test_post_review_maps_github_not_found(client, auth_headers, monkeypatch):
 
 
 def test_post_review_maps_github_rate_limit(client, auth_headers, monkeypatch):
-    async def _rate_limit_review(gh, o, r, n, user_id=None):
+    async def _rate_limit_review(gh, o, r, n, user_id=None, **kwargs):
         raise GitHubAPIError(403, "rate limit", "rate_limit")
 
     monkeypatch.setattr("app.routers.reviews.run_review", _rate_limit_review)
@@ -170,7 +170,7 @@ def test_post_review_maps_github_rate_limit(client, auth_headers, monkeypatch):
 
 
 def test_post_review_maps_github_server_error(client, auth_headers, monkeypatch):
-    async def _server_error(gh, o, r, n, user_id=None):
+    async def _server_error(gh, o, r, n, user_id=None, **kwargs):
         raise GitHubAPIError(500, "Server error", "server")
 
     monkeypatch.setattr("app.routers.reviews.run_review", _server_error)
