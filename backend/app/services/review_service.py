@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
 
 from app.services import feedback_learning_service, review_repository, severity, workflow_service
 from app.services.config import settings
@@ -100,7 +100,7 @@ async def run_review(
     number: int,
     *,
     user_id: int | None = None,
-    progress: Callable[[str], None] | None = None,
+    progress: Callable[[str], Awaitable[None]] | None = None,
 ) -> dict[str, Any]:
     started = time.monotonic()
     try:
@@ -110,7 +110,7 @@ async def run_review(
         raise
 
     if progress:
-        progress("FETCHING")
+        await progress("FETCHING")
 
     context = _review_context(pull_request, raw_files, f"{owner}/{repo}")
     heuristic = context["heuristic_findings"]
@@ -127,7 +127,7 @@ async def run_review(
             error = str(exc)
 
     if progress:
-        progress("ANALYZING")
+        await progress("ANALYZING")
 
     findings = _merge_findings(heuristic, gemini)
     scoring = severity.score_findings(findings)
@@ -142,7 +142,7 @@ async def run_review(
     findings = feedback_learning_service.annotate_findings(findings, weights)
 
     if progress:
-        progress("GENERATING_REVIEW")
+        await progress("GENERATING_REVIEW")
 
     duration_ms = int((time.monotonic() - started) * 1000)
     review_id = await review_repository.save_review(
@@ -160,7 +160,7 @@ async def run_review(
         user_id=user_id,
     )
     if progress:
-        progress("PERSISTING")
+        await progress("PERSISTING")
     return _build_response(
         {
             "status": status,
