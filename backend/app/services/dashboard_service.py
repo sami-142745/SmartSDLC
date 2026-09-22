@@ -59,6 +59,15 @@ def _to_history_item(review: dict[str, Any]) -> dict[str, Any]:
         "low_count": review.get("low_count") or 0,
         "info_count": review.get("info_count") or 0,
         "review_score": review.get("review_score"),
+        "review_score_100": (
+            review.get("review_score_100")
+            if review.get("review_score_100") is not None
+            else round(review["review_score"] * 100)
+            if review.get("review_score") is not None and abs(review["review_score"]) <= 1
+            else round(review["review_score"])
+            if review.get("review_score") is not None
+            else None
+        ),
         "review_severity": review.get("review_severity"),
         "created_at": review.get("created_at"),
         "updated_at": review.get("updated_at"),

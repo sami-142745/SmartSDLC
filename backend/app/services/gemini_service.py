@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import re
+import time
 import uuid
 from typing import Any
 
@@ -76,6 +77,92 @@ def _generate_content_sync(model: str, prompt: str, generation_config: dict) -> 
     genai.configure(api_key=settings.GEMINI_API_KEY)
     model_obj = genai.GenerativeModel(model)
     return model_obj.generate_content(prompt, generation_config=generation_config)
+
+
+# HTTP statuses and exception classes that are safe to retry without side effects.
+_TRANSIENT_STATUS_CODES = (408, 429, 500, 502, 503, 504)
+_TRANSIENT_EXC_NAMES = (
+    "TimeoutError",
+    "ConnectionError",
+    "ConnectTimeout",
+    "ReadTimeout",
+    "SocketTimeout",
+    "requests.exceptions.ConnectionError",
+    "requests.exceptions.Timeout",
+    "requests.exceptions.ReadTimeout",
+    "requests.exceptions.ConnectTimeout",
+)
+
+
+def _error_status(exc: Exception) -> int | None:
+    for attr in ("code", "status_code", "status"):
+        value = getattr(exc, attr, None)
+        if isinstance(value, int):
+            return value
+    return None
+
+
+def _is_transient_failure(exc: Exception) -> bool:
+    if _error_status(exc) in _TRANSIENT_STATUS_CODES:
+        return True
+    return type(exc).__name__ in _TRANSIENT_EXC_NAMES
+
+
+def _redact_error(exc: Exception) -> str:
+    """Return a truncated, secret-free description of an exception."""
+    key = settings.GEMINI_API_KEY
+    text = str(exc)
+    if key and key != "change_me":
+        text = text.replace(key, "[REDACTED]")
+    return text[:240]
+
+
+def _classify_gemini_error(exc: Exception) -> str:
+    """Map a Gemini SDK/transport exception to a safe, human-readable cause."""
+    status = _error_status(exc)
+    name = type(exc).__name__
+    text = str(exc)
+    if status == 429 or name == "ResourceExhausted":
+        return "Gemini quota or rate limit exceeded (429)"
+    if status == 404 or name == "NotFound" or ("models/" in text and "not found" in text):
+        return "Gemini model not found"
+    if status in (401, 403) or name in ("Unauthenticated", "PermissionDenied"):
+        return "Gemini authentication failed"
+    if status == 400 or name == "InvalidArgument":
+        return "Gemini request rejected (invalid arguments)"
+    if status in _TRANSIENT_STATUS_CODES or name in ("ServiceUnavailable", "InternalServerError"):
+        return "Gemini server temporarily unavailable"
+    if name in _TRANSIENT_EXC_NAMES:
+        return "Gemini network connectivity failure"
+    return "Gemini request failed"
+
+
+def _generate_content_with_retry(model: str, prompt: str, generation_config: dict, *, attempts: int = 3) -> Any:
+    """Call the Gemini SDK, retrying transient failures with a short backoff.
+
+    Retrying only covers temporary rate limits and server blips; permanent
+    errors (auth, model-not-found, invalid arguments, hard quota exhaustion)
+    still surface immediately and are classified by the caller.
+    """
+    last_exc: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            return _generate_content_sync(model, prompt, generation_config)
+        except Exception as exc:  # noqa: BLE001 - converted to GeminiUnavailable by callers
+            last_exc = exc
+            if attempt < attempts - 1 and _is_transient_failure(exc):
+                delay = 1.5 * (attempt + 1)
+                logger.warning(
+                    "Gemini transient failure (%s); retrying in %.1fs (attempt %d/%d)",
+                    type(exc).__name__,
+                    delay,
+                    attempt + 2,
+                    attempts,
+                )
+                time.sleep(delay)
+                continue
+            raise
+    raise last_exc  # pragma: no cover
 
 
 def build_review_prompt(context: dict[str, Any]) -> str:
@@ -161,14 +248,18 @@ async def review_code(context: dict[str, Any]) -> list[dict]:
     prompt = build_review_prompt(context)
     try:
         response = await asyncio.to_thread(
-            _generate_content_sync,
+            _generate_content_with_retry,
             GEMINI_MODEL,
             prompt,
             dict(GEMINI_JSON_CONFIG),
         )
     except Exception as exc:
-        logger.warning("Gemini request failed (%s): %s", type(exc).__name__, str(exc)[:200])
-        raise GeminiUnavailable("Gemini analysis unavailable")
+        logger.warning(
+            "Gemini request failed (%s): %s",
+            type(exc).__name__,
+            _redact_error(exc),
+        )
+        raise GeminiUnavailable(_classify_gemini_error(exc)) from exc
 
     text = getattr(response, "text", "")
     if not text:
@@ -291,14 +382,18 @@ async def generate_code_documentation(context: dict[str, Any]) -> GeminiDocument
     prompt = build_documentation_prompt(context)
     try:
         response = await asyncio.to_thread(
-            _generate_content_sync,
+            _generate_content_with_retry,
             GEMINI_MODEL,
             prompt,
             dict(GEMINI_DOC_JSON_CONFIG),
         )
     except Exception as exc:
-        logger.warning("Gemini documentation request failed (%s): %s", type(exc).__name__, str(exc)[:200])
-        raise GeminiUnavailable("Gemini analysis unavailable")
+        logger.warning(
+            "Gemini documentation request failed (%s): %s",
+            type(exc).__name__,
+            _redact_error(exc),
+        )
+        raise GeminiUnavailable(_classify_gemini_error(exc)) from exc
 
     text = getattr(response, "text", "")
     if not text:
@@ -384,14 +479,18 @@ async def generate_insights_narrative(context: dict[str, Any]) -> GeminiInsightN
     prompt = build_insights_prompt(context)
     try:
         response = await asyncio.to_thread(
-            _generate_content_sync,
+            _generate_content_with_retry,
             GEMINI_MODEL,
             prompt,
             dict(GEMINI_INSIGHT_JSON_CONFIG),
         )
     except Exception as exc:
-        logger.warning("Gemini insight request failed (%s): %s", type(exc).__name__, str(exc)[:200])
-        raise GeminiUnavailable("Gemini analysis unavailable")
+        logger.warning(
+            "Gemini insight request failed (%s): %s",
+            type(exc).__name__,
+            _redact_error(exc),
+        )
+        raise GeminiUnavailable(_classify_gemini_error(exc)) from exc
 
     text = getattr(response, "text", "")
     if not text:

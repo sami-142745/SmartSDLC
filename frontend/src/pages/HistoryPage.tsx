@@ -56,11 +56,11 @@ function TimelineRow({ item, onClick }: { item: HistoryItem; onClick: () => void
           <span className="font-mono text-xs text-slate-500">
             <span className="text-slate-200 tabular-nums">{item.total_finding_count}</span> findings
           </span>
-          {item.review_score != null && (
-            <span className="font-mono text-xs tabular-nums text-slate-400">
-              {item.review_score} score
+          {item.review_score_100 != null ? (
+            <span className="font-mono text-xs text-slate-500">
+              {item.review_score_100} / 100
             </span>
-          )}
+          ) : null}
           {item.review_severity ? <SeverityBadge severity={item.review_severity} /> : null}
           <StateBadge state={item.status} />
           <span className="w-36 text-right font-mono text-xs text-slate-600">
