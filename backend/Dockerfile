@@ -9,7 +9,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy app
 COPY app ./app
 
+# Copy startup script; the container owns PORT expansion (Render must not expand it)
+COPY start.sh ./start.sh
+RUN chmod +x ./start.sh
+
 EXPOSE 8000
 
-CMD ["sh", "-c", "exec uvicorn app.main:app --host=0.0.0.0 --port=${PORT:-8000}"]
+CMD ["./start.sh"]
 
