@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 from typing import Any, Awaitable, Callable
 
@@ -32,9 +33,17 @@ def _bounded_files(files: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return bounded
 
 
-def _normalize_key(finding: dict[str, Any]) -> tuple[str, str | None, int | None]:
-    title = (finding.get("title") or "").strip().lower()
-    return title, finding.get("file"), finding.get("line")
+def _normalize_key(finding: dict[str, Any]) -> tuple[str, str, str | None, int | None]:
+    """Dedup key: (category, normalized title, file, line).
+
+    Anchor every finding by its *category* as well as its text so that a
+    security bug and a maintainability nit sharing a title never collapse into
+    one row, while two genuinely identical findings (same category + title +
+    file + line) are counted exactly once.
+    """
+    title = re.sub(r"\s+", " ", (finding.get("title") or "")).strip().lower()
+    category = (finding.get("category") or "maintainability").strip().lower()
+    return category, title, finding.get("file"), finding.get("line")
 
 
 def _merge_findings(heuristic: list[dict[str, Any]], gemini: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -87,6 +96,9 @@ def _build_response(review: dict[str, Any]) -> dict[str, Any]:
         "total_finding_count": len(findings),
         "review_score": review.get("review_score"),
         "review_severity": review.get("review_severity"),
+        "review_score_100": review.get("review_score_100"),
+        "score_breakdown": review.get("score_breakdown"),
+        "score_explanation": review.get("score_explanation"),
         "duration_ms": review.get("duration_ms"),
         "created_at": review.get("created_at"),
         "updated_at": review.get("updated_at"),
@@ -129,8 +141,30 @@ async def run_review(
     if progress:
         await progress("ANALYZING")
 
+    # Attach verbatim code evidence from the heuristic pass onto Gemini
+    # findings so every finding carries the exact code being flagged (the
+    # Phase 4 "attach the actual code as evidence" requirement). Only attach
+    # when the file/line genuinely match; never invent evidence.
+    code_by_key: dict[tuple[str, int | None], str] = {}
+    for entry in heuristic:
+        key = (entry.get("file"), entry.get("line"))
+        if key not in code_by_key and entry.get("code"):
+            code_by_key[key] = entry["code"]
+    for finding in gemini:
+        if finding.get("code"):
+            continue
+        evidence = code_by_key.get((finding.get("file"), finding.get("line")))
+        if evidence:
+            finding["code"] = evidence
+
     findings = _merge_findings(heuristic, gemini)
+
+    # Deterministic 0..100 reviewer score with a human-readable breakdown and
+    # explanation (frontend renders this on the PR page). The legacy 0..1
+    # review_score / review_severity fields are preserved for storage and for
+    # the existing dashboard + API tests.
     scoring = severity.score_findings(findings)
+    review_100 = severity.score_review(findings)
 
     if user_id is not None:
         categories = {finding.get("category") or "unknown" for finding in findings}

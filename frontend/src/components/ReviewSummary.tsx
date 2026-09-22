@@ -1,5 +1,4 @@
 import { FeatureCard } from './FeatureCard';
-import { ScoreRing } from './ScoreRing';
 import { SeverityBadge } from './SeverityBadge';
 import { StateBadge } from './Badge';
 import type { ReviewResponse } from '../types';
@@ -26,7 +25,6 @@ interface ReviewSummaryProps {
 export function ReviewSummary({ review }: ReviewSummaryProps) {
   const counts = severityCounts(review);
   const isPartial = review.status === 'gemini_unavailable';
-  const score = review.review_score;
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-glass-gradient p-5 sm:p-6">
@@ -46,6 +44,9 @@ export function ReviewSummary({ review }: ReviewSummaryProps) {
           <p className="mt-1 text-sm text-slate-500">
             {review.pull_request_title ?? 'Untitled pull request'}
             {review.created_at ? ` \u00B7 ${formatDate(review.created_at)}` : ''}
+          </p>
+          <p className="mt-1 font-mono text-xs text-accent-indigo">
+            {review.owner}/{review.repository}
           </p>
           {review.commit_sha && (
             <p className="mt-0.5 font-mono text-xs text-slate-600">commit {review.commit_sha}</p>
@@ -69,29 +70,21 @@ export function ReviewSummary({ review }: ReviewSummaryProps) {
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-1 items-center gap-6 md:grid-cols-[auto_1fr]">
-        <div className="relative flex items-center justify-center overflow-hidden rounded-xl border border-white/[0.05] bg-surface-1 px-6 py-5">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_42%,rgba(139,92,246,0.16),transparent_70%)]"
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-violet/40 to-transparent"
-          />
-          {score != null ? (
-            <div className="relative">
-              <ScoreRing
-                value={score}
-                label="Review score"
-                sublabel="out of 100"
-                color={score >= 80 ? 'success' : score < 60 ? 'danger' : 'brand'}
-              />
-            </div>
-          ) : (
-            <p className="relative px-4 text-sm text-slate-500">Score unavailable</p>
-          )}
-        </div>
+      <div className="mt-6">
+        {review.score_explanation && (
+          <div className="rounded-xl border border-white/[0.05] bg-surface-2/70 px-4 py-3">
+            <p className="text-sm leading-relaxed text-slate-300">{review.score_explanation}</p>
+            {review.score_breakdown && Object.keys(review.score_breakdown).length > 0 && (
+              <p className="mt-2 text-xs text-slate-500">
+                Penalty breakdown:&nbsp;
+                {Object.entries(review.score_breakdown)
+                  .filter(([, n]) => (n as number) > 0)
+                  .map(([sev, n]) => `${n} ${sev}`)
+                  .join(' \u00B7 ') || 'no penalties'}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">

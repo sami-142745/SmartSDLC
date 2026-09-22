@@ -175,9 +175,6 @@ function CinematicHero({
   summary: DashboardSummary;
   feedbackSummary?: FeedbackSummary;
 }) {
-  const latest = summary.recent_reviews[0];
-  const score = latest?.review_score;
-
   return (
     <section
       id="dashboard-hero"
@@ -229,36 +226,6 @@ function CinematicHero({
           One live intelligence core over your repositories, reviews and
           findings — every signal is real pipeline data.
         </p>
-      </div>
-
-      {/* SCORE INSTRUMENT — floating holo layered over the top of the AI core */}
-      <div className="absolute left-[58%] top-[5.5%] z-20 hidden -translate-x-1/2 xl:left-[60%] lg:block">
-        <div
-          data-hero="score"
-          className="hero-enter stagger-2 holo-panel holo-panel-press px-7 py-5 text-center"
-        >
-          <p className="hud-tag hud-tag-accent">◉ Security score</p>
-          {score != null ? (
-            <div className="mt-2">
-              <p className="command-score-md">{score}</p>
-              <p className="text-right font-mono text-xs text-slate-500">/100</p>
-            </div>
-          ) : (
-            <>
-              <p className="command-score-md text-slate-600">N/A</p>
-              <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">
-                No review yet
-              </p>
-            </>
-          )}
-          <p className="mt-3 flex items-center justify-center gap-2 font-mono text-[9px] uppercase tracking-[0.2em] text-slate-500">
-            <span
-              aria-hidden
-              className="h-1 w-1 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]"
-            />
-            live telemetry
-          </p>
-        </div>
       </div>
 
       {/* floating spatial HUD panels — the real six metrics flanking the core */}
@@ -325,12 +292,6 @@ function CinematicHero({
           <span className="h-grad block">COMMAND</span>
           <span className="block text-slate-500">CENTER</span>
         </div>
-        {score != null ? (
-          <p className="command-score-md mt-10">{score}</p>
-        ) : (
-          <p className="command-score-md mt-10 text-slate-600">N/A</p>
-        )}
-        <p className="hud-tag mt-2">◉ Security score</p>
       </div>
 
       <p className="absolute bottom-4 left-1/2 z-20 hidden -translate-x-1/2 font-mono text-[9px] uppercase tracking-[0.25em] text-slate-600 md:block">
@@ -609,19 +570,19 @@ function RecentReviewsFeed({
                     <span className="tabular-nums text-slate-200">{formatCount(item.total_finding_count)}</span>{' '}
                     findings
                   </span>
-                  {item.review_score != null && (
+                  {item.review_score_100 != null ? (
                     <span
                       className={`font-mono text-xs tabular-nums ${
-                        item.review_score >= 80
+                        item.review_score_100 >= 80
                           ? 'text-emerald-300'
-                          : item.review_score < 60
+                          : item.review_score_100 < 60
                             ? 'text-rose-300'
                             : 'text-amber-200'
                       }`}
                     >
-                      {item.review_score}%
+                      {item.review_score_100}%
                     </span>
-                  )}
+                  ) : null}
                   <span className="w-28 shrink-0 text-right font-mono text-xs text-slate-600">
                     {formatDate(item.created_at)}
                   </span>

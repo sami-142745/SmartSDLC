@@ -1,8 +1,8 @@
 from app.services.config import Settings
 
 
-def test_gemini_model_default_is_2_5_flash():
-    assert Settings().GEMINI_MODEL == "gemini-2.5-flash"
+def test_gemini_model_default_is_flash_lite_latest():
+    assert Settings().GEMINI_MODEL == "gemini-flash-lite-latest"
 
 
 def test_cors_origins_list_single():

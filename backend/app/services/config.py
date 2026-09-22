@@ -1,7 +1,17 @@
-from pydantic_settings import BaseSettings
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=PROJECT_ROOT / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
     MONGODB_URI: str = "mongodb://mongo:27017/smart_sdlc"
 
     JWT_SECRET: str = "change_me"
@@ -13,7 +23,7 @@ class Settings(BaseSettings):
     GITHUB_OAUTH_CALLBACK_URL: str = "http://localhost:8000/auth/github/callback"
 
     GEMINI_API_KEY: str = "change_me"
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MODEL: str = "gemini-flash-lite-latest"
 
     SEVERITY_HEURISTIC_SEC_WEIGHT: float = 0.6
     SEVERITY_HEURISTIC_COMPLEXITY_WEIGHT: float = 0.3

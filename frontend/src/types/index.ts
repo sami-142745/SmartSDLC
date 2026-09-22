@@ -50,6 +50,9 @@ export interface ReviewResponse {
   gemini_finding_count: number;
   total_finding_count: number;
   review_score: number | null;
+  review_score_100?: number | null;
+  score_breakdown?: Record<string, number> | null;
+  score_explanation?: string | null;
   review_severity: string | null;
   duration_ms: number | null;
   created_at: string | null;
@@ -115,6 +118,7 @@ export interface RecentReview {
   low_count: number;
   info_count: number;
   review_score: number | null;
+  review_score_100?: number | null;
   review_severity: string | null;
   created_at: string | null;
 }
@@ -150,6 +154,7 @@ export interface HistoryItem {
   low_count: number;
   info_count: number;
   review_score: number | null;
+  review_score_100?: number | null;
   review_severity: string | null;
   created_at: string | null;
   updated_at: string | null;
