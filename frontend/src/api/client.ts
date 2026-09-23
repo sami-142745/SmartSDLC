@@ -1,8 +1,16 @@
 import axios, { AxiosError } from 'axios';
 
+const LOCAL_API_URL = 'http://localhost:8000';
+const PRODUCTION_API_URL = 'https://smartsdlc-backend.onrender.com';
+
+const isProductionFrontend =
+  typeof window !== 'undefined' &&
+  window.location.hostname === 'smartsdlc-frontend.onrender.com';
+
 export const API_BASE_URL = (
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-  'https://smartsdlc-backend.onrender.com'
+  isProductionFrontend
+    ? PRODUCTION_API_URL
+    : (import.meta.env.VITE_API_BASE_URL as string | undefined) || LOCAL_API_URL
 ).replace(/\/+$/, '');
 
 /**
@@ -35,7 +43,8 @@ export interface ApiError {
 export function normalizeApiError(error: unknown): ApiError {
   if (axios.isAxiosError(error)) {
     const status = Number(error.response?.status ?? 0);
-    const detail = (error.response?.data as { detail?: unknown } | undefined)?.detail;
+    const detail = (error.response?.data as { detail?: unknown } | undefined)
+      ?.detail;
 
     if (status === 401) {
       return {
@@ -86,8 +95,7 @@ export function normalizeApiError(error: unknown): ApiError {
     if (!error.response) {
       return {
         status: undefined,
-        message:
-          'Cannot reach the SmartSDLC backend. Please try again later.',
+        message: 'Cannot reach the SmartSDLC backend. Please try again later.',
       };
     }
 
@@ -110,12 +118,9 @@ export function normalizeApiError(error: unknown): ApiError {
   };
 }
 
-/**
- * Central 401 handling: clear the session and send the user back to the login
- * page. Pages that run while already inside the login flow keep control so they
- * can render their own error.
- */
-export function handleResponseError(error: AxiosError): Promise<ApiError> {
+export function handleResponseError(
+  error: AxiosError,
+): Promise<ApiError> {
   const status = Number(error.response?.status ?? 0);
 
   if (status === 401) {
