@@ -8,9 +8,10 @@ export default defineConfig({
     port: 5173,
   },
   preview: {
-    host: '0.0.0.0',
-    port: 5173,
-  },
+  host: '0.0.0.0',
+  port: 5173,
+  allowedHosts: ['smartsdlc-frontend.onrender.com'],
+},
   build: {
     chunkSizeWarningLimit: 700,
     rollupOptions: {
