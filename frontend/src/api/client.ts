@@ -1,7 +1,8 @@
 import axios, { AxiosError } from 'axios';
 
 export const API_BASE_URL = (
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:8000'
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  'https://smartsdlc-backend.onrender.com'
 ).replace(/\/+$/, '');
 
 /**
@@ -37,37 +38,76 @@ export function normalizeApiError(error: unknown): ApiError {
     const detail = (error.response?.data as { detail?: unknown } | undefined)?.detail;
 
     if (status === 401) {
-      return { status, message: 'Your session has expired. Please sign in again.' };
+      return {
+        status,
+        message: 'Your session has expired. Please sign in again.',
+      };
     }
+
     if (status === 403) {
-      return { status, message: 'You do not have permission to perform this action.' };
+      return {
+        status,
+        message: 'You do not have permission to perform this action.',
+      };
     }
+
     if (status === 404) {
-      return { status, message: 'The requested resource was not found.' };
+      return {
+        status,
+        message: 'The requested resource was not found.',
+      };
     }
+
     if (status === 429) {
-      return { status, message: 'Rate limit exceeded. Please wait a moment and try again.' };
+      return {
+        status,
+        message: 'Rate limit exceeded. Please wait a moment and try again.',
+      };
     }
+
     if (status >= 500) {
-      return { status, message: 'Sorry, something went wrong on the server. Please try again later.' };
+      return {
+        status,
+        message:
+          'Sorry, something went wrong on the server. Please try again later.',
+      };
     }
-    if ((detail && typeof detail === 'string') || (detail && typeof detail === 'number')) {
-      return { status, message: String(detail) };
+
+    if (
+      (detail && typeof detail === 'string') ||
+      (detail && typeof detail === 'number')
+    ) {
+      return {
+        status,
+        message: String(detail),
+      };
     }
+
     if (!error.response) {
       return {
         status: undefined,
-        message: 'Cannot reach the SmartSDLC backend. Make sure it is running on port 8000.',
+        message:
+          'Cannot reach the SmartSDLC backend. Please try again later.',
       };
     }
-    return { status, message: `Request failed with status ${status}.` };
+
+    return {
+      status,
+      message: `Request failed with status ${status}.`,
+    };
   }
 
   const raw = error as { message?: unknown } | undefined;
+
   if (raw?.message && typeof raw.message === 'string') {
-    return { message: raw.message };
+    return {
+      message: raw.message,
+    };
   }
-  return { message: 'Something went wrong. Please try again.' };
+
+  return {
+    message: 'Something went wrong. Please try again.',
+  };
 }
 
 /**
@@ -77,15 +117,19 @@ export function normalizeApiError(error: unknown): ApiError {
  */
 export function handleResponseError(error: AxiosError): Promise<ApiError> {
   const status = Number(error.response?.status ?? 0);
+
   if (status === 401) {
     clearToken();
+
     if (typeof window !== 'undefined') {
       const path = window.location.pathname || '';
+
       if (!path.startsWith('/login')) {
         window.location.href = '/login';
       }
     }
   }
+
   return Promise.reject(normalizeApiError(error));
 }
 
@@ -96,9 +140,11 @@ export const http = axios.create({
 
 http.interceptors.request.use((config) => {
   const token = getToken();
+
   if (token) {
     config.headers.set('Authorization', `Bearer ${token}`);
   }
+
   return config;
 });
 
