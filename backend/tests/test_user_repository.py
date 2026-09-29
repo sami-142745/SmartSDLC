@@ -37,11 +37,11 @@ async def test_upsert_creates_new_user(monkeypatch):
     monkeypatch.setattr("app.services.user_repository.get_db", lambda: fake_db)
 
     profile = {"id": 123, "login": "octocat", "name": "Octo Cat", "email": "octo@example.com", "avatar_url": "https://avatars/1"}
-    await user_repository.upsert_github_user(profile, "gho_token_secret")
+    await user_repository.upsert_github_user(profile, "gho_TEST_token_secret")
 
     doc = fake_db.users.docs[123]
     assert doc["login"] == "octocat"
-    assert doc["github_access_token"] == "gho_token_secret"
+    assert doc["github_access_token"] == "gho_TEST_token_secret"
     assert doc["created_at"] is not None
 
 
@@ -72,7 +72,7 @@ def test_to_safe_user_never_includes_access_token():
     user = {
         "github_id": 1,
         "login": "alice",
-        "github_access_token": "gho_super_secret",
+        "github_access_token": "gho_TEST_super_secret",
         "created_at": "x",
         "updated_at": "y",
     }

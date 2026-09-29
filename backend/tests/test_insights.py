@@ -129,7 +129,7 @@ def any_user_headers(monkeypatch):
             "github_id": github_id,
             "login": f"user{github_id}",
             "name": f"User {github_id}",
-            "github_access_token": "gho_super_secret_token",
+            "github_access_token": "gho_TEST_super_secret_token",
         }
 
     monkeypatch.setattr("app.services.security.get_user_by_github_id", get_user)
@@ -621,8 +621,8 @@ class TestInsightPromptSafety:
                 review_id,
                 "high",
                 "bug",
-                title="Leaked ghp_LIVE_SECRET_0123456789",
-                recommendation="use ghp_LIVE_SECRET_0123456789 to fix",
+                title="Leaked ghp_TEST_LIVE_SECRET_0123456789",
+                recommendation="use ghp_TEST_LIVE_SECRET_0123456789 to fix",
             )
         )
 
@@ -634,7 +634,7 @@ class TestInsightPromptSafety:
         )
 
         serialized = json.dumps(captured["context"], default=str)
-        assert "ghp_LIVE_SECRET_0123456789" not in serialized
+        assert "ghp_TEST_LIVE_SECRET_0123456789" not in serialized
         assert "ghp_" not in serialized
         assert '"total_findings": 1' in serialized
 

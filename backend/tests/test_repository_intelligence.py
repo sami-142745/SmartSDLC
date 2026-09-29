@@ -1078,7 +1078,7 @@ def intelligence_auth(monkeypatch):
             "github_id": 42,
             "login": "octocat",
             "name": "Octo Cat",
-            "github_access_token": "gho_secret",
+            "github_access_token": "gho_TEST_secret",
         }
 
     monkeypatch.setattr("app.services.security.get_user_by_github_id", known_user)
@@ -1207,7 +1207,7 @@ class TestRepositoryIntelligenceRoutes:
                 "_id": "1" * 24,
                 "github_id": 42,
                 "login": "octocat",
-                "github_access_token": "gho_secret",
+                "github_access_token": "gho_TEST_secret",
             }
 
         monkeypatch.setattr("app.services.security.get_user_by_github_id", known_user)

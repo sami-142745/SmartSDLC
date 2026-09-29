@@ -66,11 +66,11 @@ OWNER_ID = 42
 INTRUDER_ID = 99
 
 _USERS = {
-    OWNER_ID: {"login": "octocat", "name": "Octo Cat", "github_access_token": "gho_owner_token"},
+    OWNER_ID: {"login": "octocat", "name": "Octo Cat", "github_access_token": "gho_TEST_owner_token"},
     INTRUDER_ID: {
         "login": "intruder",
         "name": "Nosy Parker",
-        "github_access_token": "gho_intruder_token",
+        "github_access_token": "gho_TEST_intruder_token",
     },
 }
 

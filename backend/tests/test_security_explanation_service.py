@@ -83,9 +83,9 @@ class TestPrompt:
 
     def test_a_secret_in_a_path_is_redacted_before_the_prompt(self):
         # A filename can itself be a token; the prompt must not become the leak.
-        finding = _finding(file="src/AKIA7XQ2MZL9P4RTW3KD.py")
+        finding = _finding(file="src/AKIATEST7XQ2MZL9P4RTW3KD.py")
         prompt = explain.build_security_explanation_prompt(explain.finding_context(finding))
-        assert "AKIA7XQ2MZL9P4RTW3KD" not in prompt
+        assert "AKIATEST7XQ2MZL9P4RTW3KD" not in prompt
 
     def test_a_context_that_cannot_be_serialised_still_produces_a_prompt(self):
         prompt = explain.build_security_explanation_prompt({"fingerprint": "fp1", "bad": object()})
@@ -318,7 +318,7 @@ class TestExplainFinding:
     @pytest.mark.asyncio
     async def test_a_secret_never_appears_in_the_explanation(self, monkeypatch):
         monkeypatch.setattr(explain.settings, "GEMINI_API_KEY", "key")
-        secret = "AKIA7XQ2MZL9P4RTW3KD"
+        secret = "AKIATEST7XQ2MZL9P4RTW3KD"
         monkeypatch.setattr(
             explain,
             "_generate_content_with_retry",

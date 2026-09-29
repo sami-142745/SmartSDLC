@@ -22,9 +22,9 @@ from app.services.security_secret_scanner import (
 # deliberately in one test below to prove placeholder suppression does not apply
 # to prefix-anchored rules.
 AWS_KEY = "AKIAIOSFODNN7EXAMPLE"
-GITHUB_TOKEN = "ghp_" + "a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8"
-SLACK_TOKEN = "TEST_SLACK_TOKEN_PLACEHOLDER"
-GOOGLE_KEY = "AIza" + "SyD-1234567890abcdefghijklmnopqrstu"
+GITHUB_TOKEN = "ghp_TEST" + "a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8"
+SLACK_TOKEN = "TEST_SLACK_TOKEN_PLACEHOLDERFAKE"
+GOOGLE_KEY = "AIzaTEST" + "SyD-1234567890abcdefghijklmnopqrstu"
 JWT = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
     ".eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ"

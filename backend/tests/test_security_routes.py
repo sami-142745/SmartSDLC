@@ -22,16 +22,16 @@ OWNER_ID = 42
 INTRUDER_ID = 99
 
 USERS = {
-    OWNER_ID: {"login": "octocat", "name": "Octo Cat", "github_access_token": "gho_owner"},
+    OWNER_ID: {"login": "octocat", "name": "Octo Cat", "github_access_token": "gho_TESTowner"},
     INTRUDER_ID: {
         "login": "intruder",
         "name": "Nosy Parker",
-        "github_access_token": "gho_intruder",
+        "github_access_token": "gho_TESTintruder",
     },
 }
 
 #: A value the secret scanner detects. Asserted absent from every response body.
-LEAKED_KEY = "AKIA7XQ2MZL9P4RTW3KDN6VYBHF5JGC1"
+LEAKED_KEY = "AKIATEST7XQ2MZL9P4RTW3KDN6VYBHF5JGC1"
 
 
 def _bearer(github_id: int) -> dict[str, str]:

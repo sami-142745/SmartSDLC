@@ -23,17 +23,17 @@ def test_redacts_private_key_block():
 
 
 def test_redacts_github_token():
-    out = redact_secrets("ghp_" + "a" * 36)
+    out = redact_secrets("ghp_TEST" + "a" * 36)
     assert out == "[REDACTED]"
 
 
 def test_redacts_github_atom_token():
-    out = redact_secrets("gho_" + "b" * 36)
+    out = redact_secrets("gho_TEST" + "b" * 36)
     assert out == "[REDACTED]"
 
 
 def test_redacts_gitlab_pat():
-    out = redact_secrets("glpat-abcdefghijk0123456789")
+    out = redact_secrets("glpat-TEST-abcdefghijk0123456789")
     assert out == "[REDACTED]"
 
 
@@ -43,17 +43,17 @@ def test_redacts_aws_access_key():
 
 
 def test_redacts_gcp_api_key():
-    out = redact_secrets("AIzaSy" + "b" * 33)
+    out = redact_secrets("AIzaTEST" + "b" * 33)
     assert out == "[REDACTED]"
 
 
 def test_redacts_generic_openai_key():
-    out = redact_secrets("sk-proj-abcdef1234567890abcdef")
+    out = redact_secrets("sk-proj-TEST-abcdef1234567890abcdef")
     assert out == "[REDACTED]"
 
 
 def test_redacts_slack_token():
-    out = redact_secrets("TEST_SLACK_TOKEN_PLACEHOLDER2")
+    out = redact_secrets("TEST_SLACK_TOKEN_PLACEHOLDER2FAKE")
     assert out == "[REDACTED]"
 
 
@@ -73,7 +73,7 @@ def test_redacts_credential_assignment_colon():
 
 
 def test_redacts_multiple_secrets_in_one_buffer():
-    text = "token=ghp_" + "c" * 36 + "\nclient_secret=\"keepmehidden123456\""
+    text = "token=ghp_TEST" + "c" * 36 + "\nclient_secret=\"keepmehidden123456\""
     out = redact_secrets(text)
     assert "REDACTED" in out
     assert "keepmehidden" not in out

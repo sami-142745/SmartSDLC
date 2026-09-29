@@ -118,7 +118,7 @@ class FakeDb:
 @pytest.fixture
 def auth_headers(monkeypatch):
     async def known_user(github_id):
-        return {"github_id": github_id, "login": "octocat", "github_access_token": "gho_test"}
+        return {"github_id": github_id, "login": "octocat", "github_access_token": "gho_TEST_test"}
 
     monkeypatch.setattr("app.services.security.get_user_by_github_id", known_user)
     return {"Authorization": f"Bearer {create_access_token({'sub': '7', 'login': 'octocat'})}"}

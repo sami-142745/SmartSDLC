@@ -45,11 +45,11 @@ async def test_exchange_code_for_token_returns_token(monkeypatch, oauth_settings
         assert request.url == "https://github.com/login/oauth/access_token"
         assert b"code=abc" in request.content
         assert b"client_secret=cs-456" in request.content
-        return httpx.Response(200, json={"access_token": "gho_live_token", "scope": "repo"})
+        return httpx.Response(200, json={"access_token": "gho_TEST_live_token", "scope": "repo"})
 
     _install_mock_client(monkeypatch, handler)
     token = await github_oauth.exchange_code_for_token("abc")
-    assert token == "gho_live_token"
+    assert token == "gho_TEST_live_token"
 
 
 @pytest.mark.asyncio
@@ -85,12 +85,12 @@ async def test_exchange_handles_connection_error(monkeypatch, oauth_settings):
 @pytest.mark.asyncio
 async def test_fetch_user_profile_returns_profile(monkeypatch, oauth_settings):
     def handler(request):
-        assert request.headers["authorization"] == "Bearer gho_live_token"
+        assert request.headers["authorization"] == "Bearer gho_TEST_live_token"
         assert request.url == "https://api.github.com/user"
         return httpx.Response(200, json={"id": 42, "login": "octocat", "name": "Octo Cat"})
 
     _install_mock_client(monkeypatch, handler)
-    profile = await github_oauth.fetch_user_profile("gho_live_token")
+    profile = await github_oauth.fetch_user_profile("gho_TEST_live_token")
     assert profile["login"] == "octocat"
 
 
@@ -101,7 +101,7 @@ async def test_fetch_user_profile_rejects_non_200(monkeypatch, oauth_settings):
 
     _install_mock_client(monkeypatch, handler)
     with pytest.raises(OAuthError):
-        await github_oauth.fetch_user_profile("gho_bad")
+        await github_oauth.fetch_user_profile("gho_TEST_bad")
 
 
 @pytest.mark.asyncio
@@ -109,7 +109,7 @@ async def test_handle_callback_success(monkeypatch, oauth_settings):
     monkeypatch.setattr(settings, "JWT_SECRET", "sec")
 
     async def fake_exchange(code):
-        return "gho_live_token"
+        return "gho_TEST_live_token"
 
     async def fake_fetch(token):
         return {"id": 42, "login": "octocat", "name": "Octo Cat", "avatar_url": None, "email": None}

@@ -321,7 +321,7 @@ class TestSecretSafety:
         # themselves contain no high-entropy credential.
         import re
 
-        secret = "AKIA7XQ2MZL9P4RTW3KDN6VYBHF5JGC1"
+        secret = "AKIATEST7XQ2MZL9P4RTW3KDN6VYBHF5JGC1"
         finding = _finding(
             scanner="secret",
             category="secrets",

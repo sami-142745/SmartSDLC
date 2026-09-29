@@ -334,7 +334,7 @@ def auth_headers(monkeypatch):
             "github_id": 42,
             "login": "octocat",
             "name": "Octo Cat",
-            "github_access_token": "gho_super_secret_token",
+            "github_access_token": "gho_TEST_super_secret_token",
         }
 
     monkeypatch.setattr("app.services.security.get_user_by_github_id", known_user)

@@ -68,7 +68,7 @@ def _reset_fake(monkeypatch):
 @pytest.fixture
 def auth_headers(monkeypatch):
     async def known_user(github_id):
-        return {"github_id": github_id, "login": "octocat", "github_access_token": "gho_test"}
+        return {"github_id": github_id, "login": "octocat", "github_access_token": "gho_TEST_test"}
 
     monkeypatch.setattr("app.services.security.get_user_by_github_id", known_user)
     return {"Authorization": f"Bearer {create_access_token({'sub': '7', 'login': 'octocat'})}"}
@@ -79,7 +79,7 @@ def test_list_repositories_returns_repos(client, auth_headers):
     assert resp.status_code == 200
     body = resp.json()
     assert body["repositories"][0]["full_name"] == "octocat/Hello-World"
-    assert "gho_test" not in str(body)
+    assert "gho_TEST_test" not in str(body)
 
 
 def test_list_repositories_requires_connected_github(client, monkeypatch):
@@ -181,7 +181,7 @@ def test_list_repositories_routes_to_gitlab_provider(client, auth_headers, monke
     resp = client.get("/repositories?provider=gitlab", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["repositories"][0]["full_name"] == "acme/gl-lab"
-    assert created["token"] == "gho_test"
+    assert created["token"] == "gho_TEST_test"
 
 
 def test_list_repositories_defaults_to_github_provider(client, auth_headers, monkeypatch):
@@ -242,14 +242,14 @@ def test_github_connect_success(client, auth_headers, monkeypatch):
 
     resp = client.post(
         "/github/connect",
-        json={"token": "gho_connect_secret_123"},
+        json={"token": "gho_TEST_connect_secret_123"},
         headers=auth_headers,
     )
     assert resp.status_code == 200
     assert resp.json() == {"connected": True, "login": "octocat"}
-    assert "gho_connect_secret_123" not in resp.text
+    assert "gho_TEST_connect_secret_123" not in resp.text
     assert saved["profile"]["id"] == 7
-    assert saved["token"] == "gho_connect_secret_123"
+    assert saved["token"] == "gho_TEST_connect_secret_123"
 
 
 def test_github_connect_invalid_token(client, auth_headers, monkeypatch):
@@ -260,12 +260,12 @@ def test_github_connect_invalid_token(client, auth_headers, monkeypatch):
 
     resp = client.post(
         "/github/connect",
-        json={"token": "gho_invalid_token"},
+        json={"token": "gho_TEST_invalid_token"},
         headers=auth_headers,
     )
     assert resp.status_code == 401
     assert resp.json()["detail"] == "GitHub could not authenticate the user"
-    assert "gho_invalid_token" not in resp.text
+    assert "gho_TEST_invalid_token" not in resp.text
 
 
 def test_github_connect_identity_mismatch(client, auth_headers, monkeypatch):
@@ -276,11 +276,11 @@ def test_github_connect_identity_mismatch(client, auth_headers, monkeypatch):
 
     resp = client.post(
         "/github/connect",
-        json={"token": "gho_other_token"},
+        json={"token": "gho_TEST_other_token"},
         headers=auth_headers,
     )
     assert resp.status_code == 400
-    assert "gho_other_token" not in resp.text
+    assert "gho_TEST_other_token" not in resp.text
 
 
 def test_github_connect_missing_token_rejected(client, auth_headers):
@@ -292,5 +292,5 @@ def test_github_connect_missing_token_rejected(client, auth_headers):
 
 
 def test_github_connect_requires_authentication(client):
-    resp = client.post("/github/connect", json={"token": "gho_secret"})
+    resp = client.post("/github/connect", json={"token": "gho_TEST_secret"})
     assert resp.status_code == 401

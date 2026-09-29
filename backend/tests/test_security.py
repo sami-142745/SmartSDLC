@@ -52,7 +52,7 @@ def test_protected_endpoints_reject_token_for_unknown_user(client, monkeypatch):
 
 def test_protected_endpoints_allow_known_user_to_reach_dashboard(client, monkeypatch, fake_db):
     async def known_user(github_id):
-        return {"github_id": github_id, "login": "octocat", "github_access_token": "gho_secret"}
+        return {"github_id": github_id, "login": "octocat", "github_access_token": "gho_TEST_secret"}
 
     monkeypatch.setattr("app.services.security.get_user_by_github_id", known_user)
     token = create_access_token({"sub": "42", "login": "octocat"})
@@ -67,7 +67,7 @@ def test_protected_endpoints_allow_known_user_to_reach_dashboard(client, monkeyp
 
 
 def test_token_does_not_contain_github_access_token():
-    user_doc = {"github_id": 42, "login": "octocat", "github_access_token": "gho_should_never_be_in_jwt"}
+    user_doc = {"github_id": 42, "login": "octocat", "github_access_token": "gho_TEST_should_never_be_in_jwt"}
     token = create_access_token({"sub": str(user_doc["github_id"]), "login": user_doc["login"]})
     payload = decode_access_token(token)
     assert "github_access_token" not in payload
