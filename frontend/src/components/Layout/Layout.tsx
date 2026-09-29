@@ -1,45 +1,88 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
 
-import { AppBackground } from '../Background';
-import { CinematicBackdrop } from '../CinematicBackdrop';
 import { isTestEnv } from '../../lib/env';
-import { Parallax } from '../motion/Parallax';
-import { PageTransition } from '../ui/PageTransition';
+import { Ambient } from './Ambient';
 import { Header } from './Header';
-import { MobileNav, Sidebar } from './Sidebar';
+import { Sidebar } from './Sidebar';
+import { SidebarProvider, useSidebar } from './SidebarContext';
 
-export function Layout() {
+/** Announce route changes to screen readers after a client-side navigation. */
+function RouteAnnouncer() {
+  const location = useLocation();
+  useEffect(() => {
+    const main = document.getElementById('main-content');
+    main?.setAttribute('data-route', location.pathname);
+  }, [location.pathname]);
+  return null;
+}
+
+function Shell() {
+  const { mobileOpen, setMobileOpen } = useSidebar();
   const location = useLocation();
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-surface-0 text-slate-200 md:flex-row">
-      <Parallax depth={0.4} className="absolute inset-0">
-        <AppBackground />
-      </Parallax>
-      <CinematicBackdrop className="[mask-image:radial-gradient(125%_92%_at_50%_38%,black_18%,black_62%,transparent_100%)]" />
-      <Sidebar />
+    <div className="app-canvas flex min-h-screen">
+      <Ambient />
+
+      {/* Desktop rail */}
+      <div className="sticky top-0 hidden h-screen shrink-0 lg:block">
+        <Sidebar />
+      </div>
+
+      {/* Mobile drawer */}
+      <div
+        className={mobileOpen ? 'fixed inset-0 z-50 lg:hidden' : 'pointer-events-none fixed inset-0 z-50 lg:hidden'}
+        aria-hidden={!mobileOpen}
+      >
+        <button
+          type="button"
+          tabIndex={mobileOpen ? 0 : -1}
+          aria-label="Close navigation"
+          onClick={() => setMobileOpen(false)}
+          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${
+            mobileOpen ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+        <div
+          className={`absolute inset-y-0 left-0 shadow-lifted transition-transform duration-200 ease-swift ${
+            mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <Sidebar mobile />
+        </div>
+      </div>
+
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <Header />
-        <MobileNav />
-        <main className="relative flex-1 px-6 py-8 lg:px-10 lg:py-10">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-accent-indigo/20 to-transparent"
-          />
-          <div className="mx-auto w-full max-w-[1200px]">
+        <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-[1400px]">
             {isTestEnv() ? (
               <Outlet />
             ) : (
-              <AnimatePresence mode="wait" initial={false}>
-                <PageTransition key={location.pathname}>
-                  <Outlet />
-                </PageTransition>
-              </AnimatePresence>
+              <div key={location.key} className="animate-fade-in">
+                <Outlet />
+              </div>
             )}
           </div>
         </main>
       </div>
+
+      <RouteAnnouncer />
     </div>
+  );
+}
+
+export function Layout() {
+  return (
+    <SidebarProvider>
+      <a
+        href="#main-content"
+        className="sr-only-focusable fixed left-4 top-4 z-[100] rounded-lg border border-white/10 bg-surface-2 px-3 py-2 text-[13px] text-ink"
+      >
+        Skip to content
+      </a>
+      <Shell />
+    </SidebarProvider>
   );
 }

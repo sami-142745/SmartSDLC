@@ -199,7 +199,20 @@ class TestInsightRoutes:
         activity = body["activity"]
         assert activity["review_count"] == 3
         assert activity["pull_request_count"] == 1
-        assert 1 <= activity["reviews_this_week"] <= 3
+        # "This week" means the current calendar week (Monday onwards), matching
+        # dashboard_service. Deriving the expectation from that same definition
+        # keeps this assertion correct on every weekday; the old 1..3 range
+        # silently broke on Mondays, when the rolling seed offsets all fall in
+        # the prior calendar week.
+        server_date = _utcnow()
+        week_start = server_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_start = week_start - datetime.timedelta(days=week_start.weekday())
+        expected_this_week = sum(
+            1
+            for offset in (6, 3, 1)
+            if server_date - datetime.timedelta(days=offset) >= week_start
+        )
+        assert activity["reviews_this_week"] == expected_this_week
         assert len(activity["reviews_over_time"]) == 1
         assert activity["reviews_over_time"][0]["reviews"] == 3
         assert activity["reviews_over_time"][0]["findings"] == 7

@@ -1,87 +1,185 @@
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../auth/AuthContext';
-import { CodeLogo } from '../CodeLogo';
-import { initials } from '../../utils/format';
+import { cn } from '../../lib/cn';
+import { Avatar } from '../ui/Avatar';
+import { Logo, LogoMark } from './Logo';
+import { navLabelForPath } from './navItems';
+import { useSidebar } from './SidebarContext';
 
-const PAGE_TITLES: Array<{ match: RegExp; title: string }> = [
-  { match: /^\/dashboard$/, title: 'Command Center' },
-  { match: /^\/repositories\//, title: 'Repository Intelligence' },
-  { match: /^\/repositories$/, title: 'Repositories' },
-  { match: /^\/pull-requests\//, title: 'Pull Request Analysis' },
-  { match: /^\/pull-requests$/, title: 'Pull Requests' },
-  { match: /^\/reviews\//, title: 'AI Security Analysis' },
-  { match: /^\/history$/, title: 'Security Review History' },
-  { match: /^\/feedback$/, title: 'Feedback Loop' },
-  { match: /^\/settings$/, title: 'System Settings' },
-];
+function PanelIcon({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" className="h-4 w-4">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d={open ? 'M9 4v16' : 'M3 12h18'} strokeLinecap="round" />
+    </svg>
+  );
+}
 
-function pageTitle(pathname: string): string {
-  for (const { match, title } of PAGE_TITLES) {
-    if (match.test(pathname)) return title;
-  }
-  return 'SmartSDLC';
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" className="h-4 w-4">
+      <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Breadcrumb-style trail, e.g. Repositories / acme / webapp. */
+function Breadcrumbs() {
+  const { pathname } = useLocation();
+  const segments = pathname.split('/').filter(Boolean);
+  const section = navLabelForPath(pathname);
+
+  if (segments.length === 0) return null;
+
+  return (
+    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-[13px]">
+      {section ? (
+        <>
+          <span className="shrink-0 text-ink-muted">{section}</span>
+          {segments.length > 1 ? (
+            <>
+              <span aria-hidden className="text-ink-faint">
+                /
+              </span>
+              <span className="truncate font-mono text-ink-subtle">
+                {segments.slice(1).join(' / ')}
+              </span>
+            </>
+          ) : null}
+        </>
+      ) : (
+        <span className="truncate font-mono text-ink-subtle">{pathname}</span>
+      )}
+    </nav>
+  );
+}
+
+function UserMenu() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.03] py-1 pl-1 pr-2 transition-colors hover:bg-white/[0.06]"
+      >
+        <Avatar name={user?.login ?? 'User'} src={user?.avatar_url} size="sm" />
+        <span className="hidden text-[13px] font-medium text-ink-muted sm:inline">
+          {user?.login ?? 'User'}
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="h-3.5 w-3.5 text-ink-faint">
+          <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          className="glass-strong absolute right-0 z-50 mt-2 w-56 overflow-hidden p-1.5 shadow-lifted"
+        >
+          <div className="border-b border-white/[0.06] px-3 py-2.5">
+            <p className="truncate text-[13px] font-medium text-ink">{user?.name ?? user?.login ?? 'User'}</p>
+            {user?.login ? (
+              <p className="truncate font-mono text-[11px] text-ink-faint">@{user.login}</p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              navigate('/settings');
+            }}
+            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] text-ink-muted transition-colors hover:bg-white/[0.06] hover:text-ink"
+          >
+            Settings
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              logout();
+              navigate('/login', { replace: true });
+            }}
+            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] text-rose-300 transition-colors hover:bg-rose-500/10"
+          >
+            Log out
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function Header() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
-  };
+  const { collapsed, toggleCollapsed, setMobileOpen } = useSidebar();
 
   return (
-    <header className="relative z-10 flex h-16 items-center justify-between gap-3 border-b border-white/[0.06] bg-surface-0/50 px-4 backdrop-blur-xl sm:px-8">
-      <div className="flex min-w-0 flex-col">
-        <span className="mb-1 hidden items-center gap-2 font-mono text-[9px] uppercase tracking-[0.24em] text-slate-600 md:flex">
-          <span aria-hidden className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400">
-            <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/50" />
-          </span>
-          SmartSDLC security operations
-        </span>
-        <span className="flex items-center gap-2.5 md:hidden">
-          <CodeLogo showWordmark={false} className="h-7 w-7 rounded-lg text-[10px]" />
-          <span className="text-sm font-bold tracking-tight text-slate-100">SmartSDLC</span>
-        </span>
-        <h2 className="hidden truncate text-[15px] font-semibold leading-none tracking-[-0.015em] text-slate-50 md:block">
-          {pageTitle(location.pathname)}
-        </h2>
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.06] bg-surface-0/80 px-3 backdrop-blur-xl sm:px-5">
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open navigation"
+        className="btn-icon text-ink-subtle lg:hidden"
+      >
+        <MenuIcon />
+      </button>
+
+      <div className="lg:hidden">
+        <LogoMark className="h-7 w-7" />
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="hidden min-w-0 lg:block">
+        <Breadcrumbs />
+      </div>
+
+      <div className="ml-auto flex items-center gap-2">
         <span
-          aria-hidden
-          className="hidden items-center gap-1.5 rounded-full border border-white/[0.06] bg-surface-2/60 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500 lg:flex"
+          className={cn(
+            'hidden items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03]',
+            'px-2.5 py-1 font-mono text-[9.5px] uppercase tracking-[0.16em] text-ink-faint md:inline-flex',
+          )}
         >
-          <span className="h-1 w-1 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
+          <span aria-hidden className="h-1 w-1 rounded-full bg-emerald-400" />
           Gemini AI
         </span>
-        <div className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-surface-2/60 py-1 pl-1 pr-3 shadow-elevated backdrop-blur-md">
-          {user?.avatar_url ? (
-            <img
-              src={user.avatar_url}
-              alt={user.login ?? 'user'}
-              className="h-6 w-6 rounded-full ring-1 ring-accent-indigo/40"
-            />
-          ) : (
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-gradient text-[10px] font-bold text-white shadow-[0_0_10px_rgba(99,102,241,0.5)]">
-              {initials(user?.login)}
-            </div>
-          )}
-          <span className="hidden text-sm font-medium text-slate-200 sm:inline">
-            {user?.login ?? 'User'}
-          </span>
-        </div>
+
         <button
           type="button"
-          onClick={handleLogout}
-          className="btn-secondary px-3 py-1.5 text-sm transition-all hover:border-white/[0.16] hover:shadow-[0_0_20px_-8px_rgba(99,102,241,0.4)]"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+          aria-pressed={collapsed}
+          className="btn-icon hidden text-ink-subtle lg:inline-flex"
         >
-          Log out
+          <PanelIcon open={!collapsed} />
         </button>
+
+        <UserMenu />
       </div>
     </header>
   );

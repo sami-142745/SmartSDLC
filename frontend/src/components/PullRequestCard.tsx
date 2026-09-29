@@ -20,7 +20,7 @@ export function PullRequestCard({ pullRequest, repoName, onClick }: PullRequestC
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-indigo/50 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100"
       />
       <div className="relative flex items-center gap-3.5 px-4 py-3.5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/[0.07] bg-glass-gradient text-slate-400 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-accent-indigo/30 group-hover:text-accent-lavender group-hover:shadow-[0_0_18px_-4px_rgba(99,102,241,0.55)]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/[0.07] bg-glass-gradient text-ink-subtle transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-accent-indigo/30 group-hover:text-accent-lavender group-hover:shadow-[0_0_18px_-4px_rgba(99,102,241,0.55)]">
           <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
             <circle cx="6" cy="6" r="2.4" />
             <circle cx="6" cy="18" r="2.4" />
@@ -31,18 +31,18 @@ export function PullRequestCard({ pullRequest, repoName, onClick }: PullRequestC
 
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium text-slate-100">
+            <span className="truncate text-sm font-medium text-ink">
               #{pullRequest.number} &#x00B7; {pullRequest.title}
             </span>
             {pullRequest.state === 'closed' && (
-              <span className="hidden text-xs text-slate-600 md:inline">merged &#x00B7; {pullRequest.base ?? '\u2014'} &#x2190; {pullRequest.head ?? '\u2014'}</span>
+              <span className="hidden text-xs text-ink-faint md:inline">merged &#x00B7; {pullRequest.base ?? '\u2014'} &#x2190; {pullRequest.head ?? '\u2014'}</span>
             )}
           </span>
-          <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
+          <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-ink0">
             <span>{repoName} &#x00B7; opened by {pullRequest.user ?? '\u2014'}</span>
-            <span className="font-mono text-slate-600">
+            <span className="font-mono text-ink-faint">
               {pullRequest.base ?? '\u2014'}
-              <span className="mx-1 text-slate-500">&#x2190;</span>
+              <span className="mx-1 text-ink0">&#x2190;</span>
               {pullRequest.head ?? '\u2014'}
             </span>
             <span>Updated {formatShortDate(pullRequest.updated_at)}</span>
@@ -53,7 +53,7 @@ export function PullRequestCard({ pullRequest, repoName, onClick }: PullRequestC
           className={
             pullRequest.state === 'open'
               ? 'border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-300'
-              : 'border-slate-500/25 bg-slate-500/[0.05] text-slate-400'
+              : 'border-white/10 bg-ink-faint/[0.05] text-ink-subtle'
           }
         >
           {pullRequest.state}
@@ -61,7 +61,7 @@ export function PullRequestCard({ pullRequest, repoName, onClick }: PullRequestC
 
         <svg
           viewBox="0 0 24 24"
-          className="h-4 w-4 shrink-0 text-slate-600 transition-all duration-150 group-hover:translate-x-0.5 group-hover:text-slate-300"
+          className="h-4 w-4 shrink-0 text-ink-faint transition-all duration-150 group-hover:translate-x-0.5 group-hover:text-ink-muted"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"

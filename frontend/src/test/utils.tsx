@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
 import { AuthProvider } from '../auth/AuthContext';
@@ -17,6 +17,26 @@ export function renderWithProviders(ui: ReactNode, options: RenderOptions = {}) 
     <AuthProvider initialToken={authToken} initialUser={authUser}>
       <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
     </AuthProvider>,
+  );
+}
+
+/**
+ * Renders a page behind a matching `<Route>` so `useParams` resolves.
+ *
+ * `renderWithProviders` alone is not enough for parametrised pages: without a
+ * matching route element, `useParams` returns an empty object and the page sees
+ * blank parameters regardless of the initial entry.
+ */
+export function renderRoute(
+  path: string,
+  element: ReactNode,
+  options: RenderOptions = {},
+) {
+  return renderWithProviders(
+    <Routes>
+      <Route path={path} element={element} />
+    </Routes>,
+    options,
   );
 }
 

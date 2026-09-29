@@ -1,39 +1,46 @@
 import type { ReactNode } from 'react';
 
+import { cn } from '../lib/cn';
+import { Sparkline } from './ui/Charts';
+import type { SparkPoint } from './ui/Charts';
+
+export type MetricTone = 'default' | 'critical' | 'high' | 'success' | 'warning';
+
 interface MetricCardProps {
   label: string;
   value: string | number;
   icon?: ReactNode;
-  tone?: 'default' | 'critical' | 'high' | 'success';
+  tone?: MetricTone;
   hint?: string;
+  /** Optional trailing delta, e.g. "+12% this week". */
+  delta?: { value: string; positive: boolean };
+  /** Optional inline trend line. */
+  trend?: SparkPoint[];
+  className?: string;
 }
 
-const VALUE_TONES: Record<NonNullable<MetricCardProps['tone']>, string> = {
-  default: 'text-slate-100',
+const VALUE_TONES: Record<MetricTone, string> = {
+  default: 'text-ink',
   critical: 'text-rose-300',
   high: 'text-orange-300',
   success: 'text-emerald-300',
+  warning: 'text-amber-300',
 };
 
-const ICON_TONES: Record<NonNullable<MetricCardProps['tone']>, string> = {
-  default: 'text-accent-indigo',
+const ICON_TONES: Record<MetricTone, string> = {
+  default: 'text-accent-lavender',
   critical: 'text-rose-400',
   high: 'text-orange-400',
   success: 'text-emerald-400',
+  warning: 'text-amber-400',
 };
 
-const ACCENT_TONES: Record<NonNullable<MetricCardProps['tone']>, string> = {
-  default: 'from-accent-indigo to-accent-violet',
+const ACCENT_TONES: Record<MetricTone, string> = {
+  default: 'from-accent-violet to-accent-indigo',
   critical: 'from-rose-500 to-rose-400',
   high: 'from-orange-500 to-orange-400',
   success: 'from-emerald-500 to-emerald-400',
-};
-
-const GLOW_TONES: Record<NonNullable<MetricCardProps['tone']>, string> = {
-  default: 'hover:shadow-[0_0_28px_-14px_rgba(99,102,241,0.45)]',
-  critical: 'hover:shadow-[0_0_28px_-14px_rgba(248,113,113,0.4)]',
-  high: 'hover:shadow-[0_0_28px_-14px_rgba(251,146,60,0.4)]',
-  success: 'hover:shadow-[0_0_28px_-14px_rgba(52,211,153,0.4)]',
+  warning: 'from-amber-500 to-amber-400',
 };
 
 function DefaultIcon() {
@@ -50,47 +57,75 @@ export function MetricCard({
   icon,
   tone = 'default',
   hint,
+  delta,
+  trend,
+  className,
 }: MetricCardProps) {
   return (
-    <div
-      className={`group metric-tile relative overflow-hidden bg-surface-1/80 px-4 py-3.5 hover:bg-surface-2/[0.6] ${GLOW_TONES[tone]}`}
-    >
+    <div className={cn('glass-subtle group relative overflow-hidden px-4 py-3.5', className)}>
+      {/* Tone rail: the fastest way to scan a row of metrics by urgency. */}
       <span
         aria-hidden
-        className={`pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r to-transparent opacity-60 transition-opacity duration-200 group-hover:opacity-100 ${ACCENT_TONES[tone]}`}
+        className={cn(
+          'pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r to-transparent opacity-70',
+          ACCENT_TONES[tone],
+        )}
       />
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-glass-gradient opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-      />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-accent-indigo/[0.06] blur-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-accent-violet/[0.08] opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100"
       />
       <div className="relative flex items-start gap-3">
         <span
           aria-hidden
-          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] transition-all duration-200 group-hover:-translate-y-0.5 ${ICON_TONES[tone]}`}
+          className={cn(
+            'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-ink-muted transition-colors duration-200',
+            ICON_TONES[tone],
+          )}
         >
           {icon ?? <DefaultIcon />}
         </span>
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 group-hover:text-slate-400">
-            {label}
+        <div className="min-w-0 flex-1">
+          <p className="eyebrow truncate">{label}</p>
+          <p className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className={cn('text-[22px] font-semibold leading-none tabular-nums tracking-tight', VALUE_TONES[tone])}>
+              {value}
+            </span>
+            {delta ? (
+              <span
+                className={cn(
+                  'font-mono text-[11px] tabular-nums',
+                  delta.positive ? 'text-emerald-300' : 'text-rose-300',
+                )}
+              >
+                {delta.value}
+              </span>
+            ) : null}
           </p>
-          <p className={`mt-1 flex items-baseline gap-2 text-xl font-semibold leading-none tabular-nums tracking-tight ${VALUE_TONES[tone]}`}>
-            {value}
-          </p>
-          {hint && <p className="mt-1.5 text-[11px] leading-snug text-slate-500">{hint}</p>}
+          {hint ? <p className="mt-1.5 text-[11px] leading-snug text-ink-faint">{hint}</p> : null}
         </div>
+        {trend && trend.length > 1 ? (
+          <div className="shrink-0 self-center opacity-80">
+            <Sparkline points={trend} color={tone === 'default' ? '#8B5CF6' : 'currentColor'} />
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
 
-export function MetricGrid({ children }: { children: ReactNode }) {
+/**
+ * Hairline-separated metric grid. The 1px gap over a translucent background
+ * produces dividers without extra borders on every cell.
+ */
+export function MetricGrid({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.04] shadow-elevated sm:grid-cols-2 xl:grid-cols-3">
+    <div
+      className={cn(
+        'grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.04] sm:grid-cols-2 xl:grid-cols-4',
+        className,
+      )}
+    >
       {children}
     </div>
   );

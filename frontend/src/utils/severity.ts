@@ -1,4 +1,4 @@
-import type { Category, Severity } from '../types';
+import type { Category, SecurityCategory, SecurityScanner, Severity } from '../types';
 
 export const SEVERITY_ORDER: Severity[] = ['critical', 'high', 'medium', 'low', 'info'];
 
@@ -15,7 +15,7 @@ export const SEVERITY_BADGE_CLASSES: Record<Severity, string> = {
   high: 'border-orange-400/25 bg-orange-400/[0.06] text-orange-300',
   medium: 'border-amber-400/25 bg-amber-400/[0.06] text-amber-300',
   low: 'border-sky-400/25 bg-sky-400/[0.06] text-sky-300',
-  info: 'border-slate-500/30 bg-slate-500/[0.06] text-slate-400',
+  info: 'border-white/10 bg-ink-faint/[0.06] text-ink-subtle',
 };
 
 export const SEVERITY_CHART_COLORS: Record<Severity, string> = {
@@ -87,5 +87,66 @@ export function sourceBadgeClasses(value: string | null | undefined): string {
   if (value === 'gemini') return 'border-violet-400/25 bg-violet-400/[0.06] text-violet-300';
   if (value === 'heuristic') return 'border-sky-400/25 bg-sky-400/[0.06] text-sky-300';
   if (value === 'combined') return 'border-accent-indigo/25 bg-accent-indigo/[0.06] text-accent-indigo';
-  return 'border-slate-500/30 bg-slate-500/[0.06] text-slate-400';
+  return 'border-white/10 bg-ink-faint/[0.06] text-ink-subtle';
+}
+
+// ---------------------------------------------------------------------------
+// Security taxonomy (Sprint 4)
+//
+// Kept beside the review labels because the two vocabularies are genuinely
+// different: a review finding is a kind of *change*, a security finding is a
+// kind of *weakness*. They are labelled separately so neither page renders a
+// category it does not understand.
+// ---------------------------------------------------------------------------
+
+export const SECURITY_CATEGORY_LABELS: Record<SecurityCategory, string> = {
+  secrets: 'Exposed secrets',
+  injection: 'Injection',
+  code_execution: 'Code execution',
+  crypto: 'Cryptography',
+  path_traversal: 'Path traversal',
+  deserialization: 'Deserialization',
+  authentication: 'Authentication',
+  dependencies: 'Dependencies',
+  misconfiguration: 'Misconfiguration',
+};
+
+export const SECURITY_SCANNER_LABELS: Record<SecurityScanner, string> = {
+  secret: 'Secret scanner',
+  code: 'Code scanner',
+  dependency: 'Dependency scanner',
+};
+
+/** Stable hue per category, so a category keeps its colour between scans. */
+export const SECURITY_CATEGORY_COLORS: Record<SecurityCategory, string> = {
+  secrets: '#f87171',
+  injection: '#fb923c',
+  code_execution: '#c084fc',
+  crypto: '#fbbf24',
+  path_traversal: '#38bdf8',
+  deserialization: '#f472b6',
+  authentication: '#2dd4bf',
+  dependencies: '#a3e635',
+  misconfiguration: '#94a3b8',
+};
+
+export function securityCategoryLabel(value: string | null | undefined): string {
+  if (value && value in SECURITY_CATEGORY_LABELS) {
+    return SECURITY_CATEGORY_LABELS[value as SecurityCategory];
+  }
+  return 'Other';
+}
+
+export function securityCategoryColor(value: string | null | undefined): string {
+  if (value && value in SECURITY_CATEGORY_COLORS) {
+    return SECURITY_CATEGORY_COLORS[value as SecurityCategory];
+  }
+  return '#94a3b8';
+}
+
+export function securityScannerLabel(value: string | null | undefined): string {
+  if (value && value in SECURITY_SCANNER_LABELS) {
+    return SECURITY_SCANNER_LABELS[value as SecurityScanner];
+  }
+  return 'Unknown scanner';
 }

@@ -91,6 +91,44 @@ def _to_pull_request_file(raw: dict) -> dict:
     }
 
 
+def _to_repository_profile(raw: dict) -> dict:
+    """Normalize the rich repository payload used by Repository Intelligence.
+
+    Kept separate from :func:`_to_repository` on purpose: the list/detail
+    endpoints use a deliberately small projection that existing clients and
+    tests depend on, while the intelligence module needs popularity,
+    maintenance and licensing signals that those endpoints discard.
+    """
+    license_info = raw.get("license") or {}
+    topics = raw.get("topics")
+    if not isinstance(topics, list):
+        topics = []
+    return {
+        "owner": (raw.get("owner") or {}).get("login"),
+        "repository": raw.get("name"),
+        "name": raw.get("name"),
+        "full_name": raw.get("full_name"),
+        "private": raw.get("private", False),
+        "description": raw.get("description"),
+        "html_url": raw.get("html_url"),
+        "default_branch": raw.get("default_branch"),
+        "primary_language": raw.get("language"),
+        "stars": raw.get("stargazers_count", 0) or 0,
+        "forks": raw.get("forks_count", 0) or 0,
+        "watchers": raw.get("watchers_count", 0) or 0,
+        "open_issues": raw.get("open_issues_count", 0) or 0,
+        "size_kb": raw.get("size", 0) or 0,
+        "license_key": license_info.get("key"),
+        "license_name": license_info.get("name"),
+        "topics": [str(topic) for topic in topics if isinstance(topic, str)],
+        "created_at": raw.get("created_at"),
+        "updated_at": raw.get("updated_at"),
+        "pushed_at": raw.get("pushed_at"),
+        "archived": raw.get("archived", False),
+        "is_fork": raw.get("fork", False),
+    }
+
+
 class GitHubClient:
     def __init__(self, access_token: str, base_url: str = GITHUB_API_BASE, timeout: float = 15.0):
         self.access_token = access_token
@@ -197,6 +235,37 @@ class GitHubClient:
         encoded = quote(path, safe="/")
         resp = await self._get(
             f"/repos/{owner}/{repo}/contents/{encoded}",
+            params={"ref": ref} if ref else None,
+            accept=GITHUB_RAW_ACCEPT,
+        )
+        return resp.text
+
+    async def get_repository_profile(self, owner: str, repo: str) -> dict:
+        """Rich repository metadata: popularity, maintenance and licensing."""
+        resp = await self._get(f"/repos/{owner}/{repo}")
+        return _to_repository_profile(resp.json())
+
+    async def get_repository_languages(self, owner: str, repo: str) -> dict:
+        """Raw byte counts per language. An empty dict means no detected code."""
+        resp = await self._get(f"/repos/{owner}/{repo}/languages")
+        payload = resp.json()
+        if not isinstance(payload, dict):
+            return {}
+        return {
+            str(name): int(value)
+            for name, value in payload.items()
+            if isinstance(value, (int, float)) and value > 0
+        }
+
+    async def get_readme(self, owner: str, repo: str, ref: str | None = None) -> str | None:
+        """Raw README text, or None when the repository has no README.
+
+        GitHub answers 404 for a missing README, which the error mapper already
+        turns into a ``not_found`` GitHubAPIError; that is translated to None
+        here so callers can treat "no README" as data rather than a failure.
+        """
+        resp = await self._get(
+            f"/repos/{owner}/{repo}/readme",
             params={"ref": ref} if ref else None,
             accept=GITHUB_RAW_ACCEPT,
         )

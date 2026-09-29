@@ -3,10 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { exchangeCode } from '../api/auth';
 import { useAuth } from '../auth/AuthContext';
-import { AppBackground } from '../components/Background';
+import { Ambient } from '../components/Layout/Ambient';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
-import { LoginVisual } from '../components/LoginVisual';
 
 export function LoginCallbackPage() {
   const { setSession } = useAuth();
@@ -40,26 +39,25 @@ export function LoginCallbackPage() {
   }, [location, setSession, navigate]);
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-0 px-4 py-12 text-slate-200">
-      <AppBackground />
-      <LoginVisual />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-0 px-4 py-12 text-ink-muted">
+      <Ambient />
+
       <div className="relative z-10 w-full max-w-md">
-        <p className="tech-label mb-3 text-center text-accent-indigo/70">SMARTSDLC SECURITY GATEWAY</p>
+        <p className="eyebrow mb-3 text-center">Confirming sign-in</p>
+
         {error ? (
-          <div className="corner-ticks border border-white/[0.08] bg-[#0c0d16]/80 p-7 backdrop-blur-2xl sm:p-8">
-            <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/50 to-transparent" />
+          <div className="glass p-7 sm:p-8">
             <ErrorState title="Sign-in failed" message={error}>
               <div className="mt-4">
-                <Link to="/login" className="btn-primary">
+                <Link to="/login" className="btn btn-primary">
                   Back to sign in
                 </Link>
               </div>
             </ErrorState>
           </div>
         ) : (
-          <div className="corner-ticks border border-white/[0.08] bg-[#0c0d16]/80 p-8 backdrop-blur-2xl">
-            <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-indigo/50 to-transparent" />
-            <LoadingState label="Confirming your GitHub sign-in\u2026" />
+          <div className="glass p-8">
+            <LoadingState label="Confirming your GitHub sign-in…" />
           </div>
         )}
       </div>
