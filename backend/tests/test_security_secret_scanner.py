@@ -24,7 +24,7 @@ from app.services.security_secret_scanner import (
 AWS_KEY = "AKIAIOSFODNN7EXAMPLE"
 GITHUB_TOKEN = "ghp_TEST" + "a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8"
 SLACK_TOKEN = "xoxb-TEST-123456789012-abcdefghijklmnopFAKE"
-GOOGLE_KEY = "AIzaTEST" + "SyD-1234567890abcdefghijklmnopqrstu"
+GOOGLE_KEY = "AIzaTESTFAKEKEY123456789012345678901234"
 JWT = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
     ".eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ"

@@ -23,12 +23,12 @@ def test_redacts_private_key_block():
 
 
 def test_redacts_github_token():
-    out = redact_secrets("ghp_TEST" + "a" * 36)
+    out = redact_secrets("ghp_" + "TEST" + "a" * 32)
     assert out == "[REDACTED]"
 
 
 def test_redacts_github_atom_token():
-    out = redact_secrets("gho_TEST" + "b" * 36)
+    out = redact_secrets("gho_" + "TEST" + "b" * 32)
     assert out == "[REDACTED]"
 
 
@@ -43,7 +43,7 @@ def test_redacts_aws_access_key():
 
 
 def test_redacts_gcp_api_key():
-    out = redact_secrets("AIzaTEST" + "b" * 33)
+    out = redact_secrets("AIza" + "TEST" + "b" * 31)
     assert out == "[REDACTED]"
 
 
@@ -73,7 +73,7 @@ def test_redacts_credential_assignment_colon():
 
 
 def test_redacts_multiple_secrets_in_one_buffer():
-    text = "token=ghp_TEST" + "c" * 36 + "\nclient_secret=\"keepmehidden123456\""
+    text = "token=ghp_" + "TEST" + "c" * 32 + "\nclient_secret=\"keepmehidden123456\""
     out = redact_secrets(text)
     assert "REDACTED" in out
     assert "keepmehidden" not in out

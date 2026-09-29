@@ -83,9 +83,10 @@ class TestPrompt:
 
     def test_a_secret_in_a_path_is_redacted_before_the_prompt(self):
         # A filename can itself be a token; the prompt must not become the leak.
-        finding = _finding(file="src/AKIATEST7XQ2MZL9P4RTW3KD.py")
+        # Must match AKIA[0-9A-Z]{16} pattern for the sanitizer to catch it.
+        finding = _finding(file="src/AKIATESTFAKEKEY12345.py".upper())
         prompt = explain.build_security_explanation_prompt(explain.finding_context(finding))
-        assert "AKIATEST7XQ2MZL9P4RTW3KD" not in prompt
+        assert "AKIATESTFAKEKEY12345" not in prompt
 
     def test_a_context_that_cannot_be_serialised_still_produces_a_prompt(self):
         prompt = explain.build_security_explanation_prompt({"fingerprint": "fp1", "bad": object()})
@@ -318,7 +319,8 @@ class TestExplainFinding:
     @pytest.mark.asyncio
     async def test_a_secret_never_appears_in_the_explanation(self, monkeypatch):
         monkeypatch.setattr(explain.settings, "GEMINI_API_KEY", "key")
-        secret = "AKIATEST7XQ2MZL9P4RTW3KD"
+        # Must match AKIA[0-9A-Z]{16} pattern for the sanitizer to catch it.
+        secret = "AKIATESTFAKEKEY12345"
         monkeypatch.setattr(
             explain,
             "_generate_content_with_retry",

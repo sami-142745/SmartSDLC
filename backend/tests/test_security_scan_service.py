@@ -21,7 +21,8 @@ USER_ID = 42
 #: downstream surface later in the file. Deliberately *not* AWS's published
 #: ``AKIAIOSFODNN7EXAMPLE`` key: that one is a documented placeholder and the
 #: scanner is supposed to suppress it.
-LEAKED_KEY = "AKIATEST7XQ2MZL9P4RTW3KDN6VYBHF5JGC1"
+# Must match AKIA[0-9A-Z]{16} pattern for the scanner to catch it.
+LEAKED_KEY = "AKIATESTFAKEKEY12345"
 
 #: A documented example key, which must NOT be reported. Placeholder suppression
 #: is what keeps every repository's README out of the findings list.

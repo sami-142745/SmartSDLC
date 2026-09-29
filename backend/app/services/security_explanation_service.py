@@ -249,6 +249,7 @@ async def explain_finding(finding: SecurityFinding) -> SecurityExplanation:
         return unavailable(finding, _classify_gemini_error(exc))
 
     text = getattr(response, "text", "") or ""
+    text = redact_secrets(text)
     try:
         payload = parse_security_explanation_response(text)
     except MalformedModelResponse as exc:
