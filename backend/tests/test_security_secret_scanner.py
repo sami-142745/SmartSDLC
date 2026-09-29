@@ -23,7 +23,7 @@ from app.services.security_secret_scanner import (
 # to prefix-anchored rules.
 AWS_KEY = "AKIAIOSFODNN7EXAMPLE"
 GITHUB_TOKEN = "ghp_TEST" + "a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8"
-SLACK_TOKEN = "TEST_SLACK_TOKEN_PLACEHOLDERFAKE"
+SLACK_TOKEN = "xoxb-TEST-123456789012-abcdefghijklmnopFAKE"
 GOOGLE_KEY = "AIzaTEST" + "SyD-1234567890abcdefghijklmnopqrstu"
 JWT = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"

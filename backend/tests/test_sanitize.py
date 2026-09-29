@@ -53,7 +53,7 @@ def test_redacts_generic_openai_key():
 
 
 def test_redacts_slack_token():
-    out = redact_secrets("TEST_SLACK_TOKEN_PLACEHOLDER2FAKE")
+    out = redact_secrets("xoxb-TEST-1234567890-abcdefghijFAKE")
     assert out == "[REDACTED]"
 
 
