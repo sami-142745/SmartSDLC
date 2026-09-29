@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { getRepositoryMetrics } from '../api/dashboard';
 import {
-  ASSISTANT_MODE_LABELS,
   performCodeAction,
   sendAssistantMessage,
 } from '../api/assistant';
@@ -24,6 +24,7 @@ import type {
   AssistantMessage,
   ScmProvider,
 } from '../types';
+import { ASSISTANT_MODE_LABELS } from '../types';
 
 interface ChatMessage {
   id: string;
@@ -242,7 +243,7 @@ export function ChatPage() {
     <PageContainer className="space-y-6">
       <PageHeader
         eyebrow="Assistant"
-        title="AI Developer Assistant"
+        title="AI Chat"
         description="Context-aware assistant that uses SmartSDLC data. Local intelligence first, Gemini when needed."
       />
 
@@ -359,6 +360,9 @@ export function ChatPage() {
                     />
                   </div>
                 </>
+              )}
+              {repos.data && (
+                <p className="text-[11px] text-ink-faint">Context loaded</p>
               )}
             </CardBody>
           </Card>

@@ -122,8 +122,8 @@ async def create_workflow(
         "provider": provider,
         "initiated_by": initiated_by,
         "status": "pending",
-        "current_stage": None,
-        "stages": [],
+        "current_stage": RECEIVED_STAGE,
+        "stages": [RECEIVED_STAGE],
         "stage_sequence": stage_sequence or [],
         "error": None,
         "duration_ms": None,
@@ -131,6 +131,7 @@ async def create_workflow(
         "updated_at": _utcnow(),
         "completed_at": None,
         "events": [],
+        "history": [{"stage": RECEIVED_STAGE, "at": now, "detail": None}],
     }
     await get_db()[WORKFLOWS_COLLECTION].insert_one(doc)
     return doc
