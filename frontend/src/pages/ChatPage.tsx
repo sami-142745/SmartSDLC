@@ -178,7 +178,12 @@ export function ChatPage() {
         },
       ]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to get response');
+      const msg = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : err instanceof Error
+          ? err.message
+          : 'Failed to get response';
+      setError(msg);
     } finally {
       setThinking(false);
     }
@@ -209,7 +214,12 @@ export function ChatPage() {
         },
       ]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to perform action');
+      const msg = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : err instanceof Error
+          ? err.message
+          : 'Failed to perform action';
+      setError(msg);
     } finally {
       setThinking(false);
     }

@@ -312,6 +312,13 @@ def _build_assistant_prompt(
         "Answer the question using only the provided context. If the context does not "
         "contain enough information to answer, say so explicitly. Do not invent or "
         "assume information that is not in the context.",
+        "",
+        "OUTPUT FORMAT — strict JSON, no prose around it:",
+        '{"answer": "your response here", "warnings": ["optional warning strings"]}',
+        "",
+        "The response MUST be a valid JSON object with an \"answer\" string field. "
+        "The \"warnings\" field is optional and must be an array of strings if present. "
+        "Do not include markdown fences, commentary, or any text outside the JSON object.",
     ])
 
     return "\n".join(lines)
